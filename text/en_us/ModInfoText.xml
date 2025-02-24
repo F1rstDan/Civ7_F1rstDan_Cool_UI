@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Database>
+    <EnglishText>
+        <Row Tag="LOC_MOD_F1RSTDAN_COOL_UI_NAME">
+            <Text>F1rstDan's Cool UI</Text>
+        </Row>
+        <Row Tag="LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION">
+            <Text>better city UI</Text>
+        </Row>
+    </EnglishText>
+</Database>

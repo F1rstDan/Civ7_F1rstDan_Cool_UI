@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Mod id="f1rstdan-cool-ui" version="1"
+    xmlns="ModInfo">
+    <Properties>
+        <Name>LOC_MOD_F1RSTDAN_COOL_UI_NAME</Name>
+        <Description>LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION</Description>
+        <Authors>F1rstDan</Authors>
+        <Package>Mod</Package>
+        <AffectsSavedGames>0</AffectsSavedGames>
+    </Properties>
+    <Dependencies>
+        <Mod id="base-standard" title="LOC_MODULE_BASE_STANDARD_NAME" />
+    </Dependencies>
+    <ActionCriteria>
+        <Criteria id="always">
+            <AlwaysMet></AlwaysMet>
+        </Criteria>
+    </ActionCriteria>
+    <ActionGroups>
+        <ActionGroup id="f1rstdan-cool-ui-city" scope="game" criteria="always">
+            <Properties>
+                <LoadOrder>1111</LoadOrder>
+            </Properties>
+            <Actions>
+                <ImportFiles>
+                    <Item>ui/production-chooser/production-chooser-item.js</Item>
+                    <Item>ui/production-chooser/city-yields.js</Item>
+                </ImportFiles>
+            </Actions>
+        </ActionGroup>
+    </ActionGroups>
+    <LocalizedText>
+        <File>text/en_us/ModInfoText.xml</File>
+    </LocalizedText>
+</Mod>
