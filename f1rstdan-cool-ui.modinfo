@@ -23,6 +23,7 @@
             </Properties>
             <Actions>
                 <ImportFiles>
+                    <!-- <Item>ui/production-chooser/panel-production-chooser.css</Item> -->
                     <Item>ui/production-chooser/production-chooser-item.js</Item>
                     <Item>ui/production-chooser/city-yields.js</Item>
                 </ImportFiles>

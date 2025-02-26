@@ -53,7 +53,8 @@ export class CityYieldsBar extends Component {
             this.tooltipAppendData(tooltipContent, yieldData.childData, 1);
         }
         //debug
-        // console.error("F1rstDan debug innerHTML:" + tooltipContent.innerHTML);
+        tooltipContent.innerHTML = Locale.stylize(tooltipContent.innerHTML);
+        console.error("F1rstDan debug innerHTML:" + tooltipContent.innerHTML);
         return tooltipContent.innerHTML;
     }
     // 为tooltip内容 进行递归处理子数据
@@ -73,7 +74,7 @@ export class CityYieldsBar extends Component {
                 continue;
             }
 
-            const detailtData = document.createElement("div");
+            const detailtData = document.createElement("span");
             const displayValue = child.isNegative ? child.value : `+${child.value}`;
             let displayLabel = child.label;
             // 修复本地化缺失：幸福感赤字，
@@ -92,8 +93,8 @@ export class CityYieldsBar extends Component {
                 styleEnd = "";
             }
             // 缩进处理
-            const indent = "&nbsp;&nbsp;".repeat(indexLevel);
-            const prefix = indexLevel > 1 ? `·&nbsp;&nbsp;` : "";
+            const indent = "&nbsp;&nbsp;".repeat(indexLevel-1);
+            const prefix = indexLevel > 1 ? `•&nbsp;` : "";
 
 
             // 合并字符串，换行+样式头+缩进+前缀+值+标签+样式尾

@@ -7,6 +7,13 @@ const categoryTooltipStyleMap = {
     [ProductionPanelCategory.WONDERS]: 'production-constructible-tooltip',
     [ProductionPanelCategory.PROJECTS]: 'production-project-tooltip',
 };
+const styleElement = document.createElement('style');
+styleElement.innerHTML = `
+    .dan-border-radius {
+        border-radius: 0.55rem 0.11rem;
+    }
+`;
+document.head.appendChild(styleElement);
 export const UpdateProductionChooserItem = (element, data, isPurchase) => {
     element.dataset.name = data.name;
     element.dataset.type = data.type;
@@ -83,7 +90,8 @@ export const UpdateProductionChooserItem = (element, data, isPurchase) => {
                 if (data.category === ProductionPanelCategory.UNITS) {
                     productionCost = city.Production.getUnitProductionCost(data.type);
                 } else {
-                    productionCost = city.Production.getConstructibleProductionCost(data.type);
+                    // productionCost = city.Production.getConstructibleProductionCost(data.type);
+                    productionCost = city.Production.getConstructibleProductionCost(data.type, FeatureTypes.NO_FEATURE, ResourceTypes.NO_RESOURCE);
                 }
                 if (productionCost !== undefined && productionCost > 0) {  // 确保有效的生产力花费
                     element.dataset.productionCost = productionCost.toString();
@@ -100,19 +108,27 @@ export class ProductionChooserItem extends FxsChooserItem {
     constructor() {
         super(...arguments);
         // #region Element References
+        // 左侧图标区
         this.iconElement = document.createElement('fxs-icon');
-        this.itemNameElement = document.createElement('span');
-        this.secondaryDetailsElement = document.createElement('div');
-        this.errorTextElement = document.createElement('span');
-        this.costContainer = document.createElement('div');
-        this.costIconElement = document.createElement('span');
+        // 主要信息区
+        this.mainInfoArea = document.createElement('div');  // add
+            this.mainInfoTopRow = document.createElement('div');  // add
+                this.itemNameElement = document.createElement('span');
+            this.errorTextElement = document.createElement('span');
+            this.mainInfoDetailsRow = document.createElement('div');  // add
+                this.secondaryDetailsElement = document.createElement('span');
+                this.maintenanceElement = document.createElement('span'); // 新增维护费
+        // 推荐图标
         this.recommendationsContainer = document.createElement('div');
-        this.costAmountElement = document.createElement('span');
-        this.agelessContainer = document.createElement('div');
-        this.maintenanceContainer = document.createElement('div'); // 新增维护费容器
-        this.maintenanceEntriesContainer = document.createElement('div');
-        this.productionCostContainer = document.createElement('div');
-        this.productionCostElement = document.createElement('span');
+        // 右侧执行信息区
+        this.rightInfoArea = document.createElement('div');  // add
+            this.rightTopRow = document.createElement('div');  // add
+                this.agelessContainer = document.createElement('div');
+            this.costContainer = document.createElement('div');
+                this.productionCostContainer = document.createElement('span');  // add
+                    this.productionCostElement = document.createElement('span');  // add
+                this.costIconElement = document.createElement('span');
+                this.costAmountElement = document.createElement('span');
     }
     // #endregion
     get isPurchase() {
@@ -141,64 +157,39 @@ export class ProductionChooserItem extends FxsChooserItem {
         this.container.appendChild(this.iconElement);
     
         // ===== 主要信息区（名称/维护费/错误信息/次要详情） =====
-        const infoContainer = document.createElement('div');
-        infoContainer.className = 'relative flex flex-col flex-auto justify-start items-start';
-        
-        // —— 顶部行（名称 + 维护费） ——
-        const infoTopRow = document.createElement('div');
-        infoTopRow.className = 'flex flex-shrink items-center';
-        
-        // 物品名称
-        this.itemNameElement.className = 'font-title text-accent-2 uppercase tracking-100';
-        infoTopRow.appendChild(this.itemNameElement);
-        
-        // 维护费组件
-        this.maintenanceContainer.className = 'flex ml-2 production-chooser-tooltip__subtext-bg hidden';
-        const maintenanceLabel = document.createElement('div');
-        maintenanceLabel.setAttribute('data-l10n-id', 'LOC_UI_PRODUCTION_MAINTENANCE');
-        maintenanceLabel.className = 'text-xs text-primary-1 leading-tight ml-2';
-        this.maintenanceEntriesContainer.className = 'flex text-xs text-negative-light font-bold leading-tight mx-2';
-        this.maintenanceContainer.append(maintenanceLabel, this.maintenanceEntriesContainer);
-        infoTopRow.appendChild(this.maintenanceContainer);
-        
-        infoContainer.appendChild(infoTopRow);
-    
-        // —— 错误信息（覆盖在信息区上方） ——
+        this.mainInfoArea.className = 'relative flex flex-col flex-auto justify-start items-start';
+        // ———— 顶部行（名称 + ） ————
+        this.mainInfoTopRow.className = 'flex flex-shrink items-center';
+        this.itemNameElement.className = 'font-title text-accent-2 uppercase tracking-100 text-sm'; // 物品名称
+        this.mainInfoTopRow.appendChild(this.itemNameElement);
+        // ———— 错误信息（覆盖在信息区上方） ————
         this.errorTextElement.className = 'font-body text-negative-light z-1 pointer-events-none';
-        infoContainer.appendChild(this.errorTextElement);
-    
-        // —— 次要详情（单位数据，默认隐藏） ——
-        this.secondaryDetailsElement.className = 'invisible flex items-center font-bold';
-        infoContainer.appendChild(this.secondaryDetailsElement);
+        // ———— 单位详情数据（次要数据 + 维护费） ————
+        this.mainInfoDetailsRow.className = 'flex flex-shrink items-center';
+        this.secondaryDetailsElement.className = 'invisible flex items-center font-bold';   // 单位数据，默认隐藏
+        this.maintenanceElement.className = 'flex text-xs text-negative-light font-bold px-1 production-chooser-tooltip__subtext-bg opacity-80 hidden dan-border-radius';  // 维护费
+        this.mainInfoDetailsRow.append(this.secondaryDetailsElement, this.maintenanceElement);
         
-        this.container.appendChild(infoContainer);
+        this.mainInfoArea.append(this.mainInfoTopRow, this.errorTextElement, this.mainInfoDetailsRow);
+        this.container.appendChild(this.mainInfoArea);
     
         // ===== 游戏推荐图标（独立区域） =====
         this.recommendationsContainer.className = 'flex items-center justify-center mr-2';
         this.container.appendChild(this.recommendationsContainer);
     
         // ===== 右侧执行信息区（无时代标记/成本/生产力消耗） =====
-        const rightColumn = document.createElement('div');
-        rightColumn.className = 'relative flex flex-col items-end justify-start';
-    
-        // —— 右上角容器（无时代标记） ——
-        const rightTopContainer = document.createElement('div');
-        rightTopContainer.className = 'flex items-center';
-        
-        // 无时代限制标记
-        this.agelessContainer.className = 'invisible flex items-center';
+        this.rightInfoArea.className = 'relative flex flex-col items-end justify-start';
+        // ———— 右上角容器（无时代标记） ————
+        this.rightTopRow.className = 'flex items-center';
+        this.agelessContainer.className = 'invisible flex items-center';    // 无时代限制标记
         this.agelessContainer.innerHTML = `
             <div class="font-title uppercase text-accent-2" data-l10n-id="LOC_UI_PRODUCTION_AGELESS"></div>
             <img src="fs://game/city_ageless.png" class="size-4 mx-1"/>
         `;
-        rightTopContainer.appendChild(this.agelessContainer);
-        rightColumn.appendChild(rightTopContainer);
-    
-        // —— 成本及生产力消耗容器 ——
+        this.rightTopRow.appendChild(this.agelessContainer);
+        // ———— 右下角容器（成本及生产力消耗） ————
         this.costContainer.className = 'flex items-center font-bold';
-        
-        // 生产力消耗组件
-        this.productionCostContainer.className = 'flex items-center mx-3 production-chooser-tooltip__subtext-bg hidden';
+        this.productionCostContainer.className = 'flex items-center mx-3 production-chooser-tooltip__subtext-bg rounded hidden';    // 生产力花费
         const productionIcon = document.createElement('fxs-icon');
         productionIcon.setAttribute('data-icon-id', 'YIELD_PRODUCTION');
         productionIcon.setAttribute('data-icon-context', 'YIELD');
@@ -211,8 +202,8 @@ export class ProductionChooserItem extends FxsChooserItem {
         this.costIconElement.className = 'size-8 bg-contain bg-center bg-no-repeat';
         this.costContainer.append(this.productionCostContainer, this.costAmountElement, this.costIconElement);
         
-        rightColumn.appendChild(this.costContainer);
-        this.container.appendChild(rightColumn);
+        this.rightInfoArea.append(this.rightTopRow, this.costContainer);
+        this.container.appendChild(this.rightInfoArea);
     }
     updateCostIconElement() {
         const costIcon = this.isPurchase ? 'Yield_Gold' : 'hud_turn-timer';
@@ -285,7 +276,7 @@ export class ProductionChooserItem extends FxsChooserItem {
             }
             // 维护费更新逻辑
             case 'data-maintenance-data':
-                this.maintenanceEntriesContainer.innerHTML = '';
+                this.maintenanceElement.innerHTML = '';
                 if (newValue) {
                     const maintenances = JSON.parse(newValue);
                     maintenances.forEach(maintenance => {
@@ -295,18 +286,18 @@ export class ProductionChooserItem extends FxsChooserItem {
                         const icon = document.createElement('fxs-icon');
                         icon.setAttribute('data-icon-id', maintenance.YieldType);
                         icon.setAttribute('data-icon-context', 'YIELD');
-                        icon.classList.add('size-4');
+                        icon.classList.add('size-6');
                         maintenanceEntry.appendChild(icon);
                         
                         const amount = document.createElement('div');
                         amount.textContent = `-${maintenance.Amount}`;
                         maintenanceEntry.appendChild(amount);
                         
-                        this.maintenanceEntriesContainer.appendChild(maintenanceEntry);
+                        this.maintenanceElement.appendChild(maintenanceEntry);
                     });
-                    this.maintenanceContainer.classList.remove('hidden');
+                    this.maintenanceElement.classList.remove('hidden');
                 } else {
-                    this.maintenanceContainer.classList.add('hidden');
+                    this.maintenanceElement.classList.add('hidden');
                 }
                 break;
             // 生产力花费更新逻辑
