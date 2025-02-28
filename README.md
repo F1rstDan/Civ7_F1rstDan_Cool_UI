@@ -1,23 +1,26 @@
-# F1rstDan's Cool UI 
-
-
-
+# Civ7 MOD: F1rstDan's Cool UI 
+- "Small but beautiful"
+- "Enjoy Civilization"
+### 文明7 MOD: 《佛系蛋，酷界面》
+- 「小而美」
+- 「享文明」
 ## Features:
-- 城市购买界面优化
-  - 支持悬停预览更详细的资源收入
-    Support to view more detailed resource income
-
-  - 更加紧凑的UI，显示更多内容
-    A more compact UI that displays more content.
-    - 条目的合理大小
-    - 关键数字的加粗
-
-  - 显示 维护费用
-    Display the maintenance cost.
-
-  - 显示 生产力花费
-    Display the production cost.
-
+- 城市生产界面优化
+  - 「资源收入栏」
+    - 支持悬停预览更详细的资源收入。
+    - todo显示更多相关内容。
+  - 「生产项目类别」
+    - 保持易读性，同时缩小，以显示更多内容。
+    - 显示 维护费用
+    - 显示 生产力花费
+- Optimization of the city production interface
+  - 「City Yields Bar」
+    - Support hovering to preview more detailed resource income.
+    - Todo: Display more relevant content.
+  - 「Production Item」
+    - Maintain readability while reducing the size to display more content.
+    - Display maintenance cost.
+    - Display production cost.
 
 
 ## Installation Instructions

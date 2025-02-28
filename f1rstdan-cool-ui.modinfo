@@ -23,10 +23,13 @@
             </Properties>
             <Actions>
                 <ImportFiles>
-                    <!-- <Item>ui/production-chooser/panel-production-chooser.css</Item> -->
                     <Item>ui/production-chooser/production-chooser-item.js</Item>
                     <Item>ui/production-chooser/city-yields.js</Item>
+                    <!-- <Item>ui/production-chooser/panel-production-chooser.js</Item> -->
                 </ImportFiles>
+				<UIScripts>
+					<Item>ui/dan-city-yields-tooltip.js</Item>
+				</UIScripts>
             </Actions>
         </ActionGroup>
     </ActionGroups>
