@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Database>
+    <EnglishText>
+        <Row Tag="LOC_MOD_F1RSTDAN_COOL_UI_NAME">
+            <Text>F1rstDan 炫酷UI调整</Text>
+        </Row>
+        <Row Tag="LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION">
+            <Text>「小而美」，「享文明」</Text>
+        </Row>
+    </EnglishText>
+</Database>

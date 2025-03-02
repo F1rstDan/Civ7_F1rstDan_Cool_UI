@@ -8,11 +8,12 @@ import TooltipManager from '/core/ui/tooltips/tooltip-manager.js';
 const styleElement = document.createElement('style');
 styleElement.innerHTML = `
     .dan-city-yields-tooltip .tooltip__content {
-        border: 0.1rem solid #82705544;
-        border-radius: 0.88rem 0.16rem;
+        border: 0.1rem solid #82705588;
+        border-radius: 1.2rem 0.16rem;
         background-image: linear-gradient(180deg, rgb(7, 8, 8, 0.95) 0%, rgb(19, 21, 31, 0.9) 100%);
         padding-left: 0.6666666667rem;
         padding-right: 0.6666666667rem;
+        width: auto;
     }
     .text-yield-food {
         color: #9fce7b;
@@ -21,6 +22,13 @@ styleElement.innerHTML = `
         color: #ce8f81;
     }
 `;
+    // .dan-city-yields-tooltip fxs-font-icon {
+    // flex-wrap: nowrap;
+    //     float: left;
+    //     white-space: nowrap;
+    //     position: absolute;
+    //     right: 0;
+    // }
 document.head.appendChild(styleElement);
 const yieldTypeTextClassMap = {
     'YIELD_FOOD': 'text-yield-food',
@@ -30,7 +38,9 @@ const yieldTypeTextClassMap = {
     'YIELD_CULTURE': 'text-yield-culture',
     'YIELD_HAPPINESS': 'text-yield-happiness',
     'YIELD_DIPLOMACY': 'text-yield-influence',
-    'YIELD_CITIES': 'text-secondary'
+    'F1DAN_CITY_POPULATION': 'text-secondary',
+    'F1DAN_CITY_CONNECTIVITY': 'text-secondary',
+    'YIELD_CITIES': 'text-secondary',
 };
 class DanCityYieldsTooltipType {
     constructor() {
@@ -43,7 +53,7 @@ class DanCityYieldsTooltipType {
         this.header = document.createElement('div');
         // 设置tooltip样式
         this.tooltip.classList.add('dan-city-yields-tooltip');
-        this.container.className = 'flex flex-col w-96 font-body text-md text-accent-2';    // bg-black p-4
+        this.container.className = 'flex flex-col min-w-96 font-body text-md text-accent-2';    // bg-black p-4 w-96
 
         // 创建标题组件
         this.yieldTitle = document.createElement("div");
@@ -68,6 +78,8 @@ class DanCityYieldsTooltipType {
     reset() {
         // 只清空内容，不移除节点
         this.yieldTitle.innerHTML = '';
+        this.yieldTitle.style.setProperty('text-align', 'center');
+        this.yieldTitle.className = 'text-secondary font-title-lg uppercase text-center tracking-100'; 
         this.description.innerHTML = '';
         // 如果需要移除额外添加的子节点，可以保留这部分逻辑
         // while (this.container.childElementCount > 2) { // 保留header和description
@@ -117,8 +129,8 @@ class DanCityYieldsTooltipType {
         const tableContainer = document.createElement("div");
         tableContainer.style.setProperty("width", "auto");
         if (indexLevel === 1) {
-            tableContainer.style.setProperty("margin-left", "1.0rem");
-            tableContainer.style.setProperty("margin-right", "1.0rem");
+            tableContainer.style.setProperty("margin-left", "0.8rem");
+            tableContainer.style.setProperty("margin-right", "0.8rem");
         }
 
         // 创建表格
@@ -143,14 +155,18 @@ class DanCityYieldsTooltipType {
             // 创建行，使用 span
             const row = document.createElement("div");
             row.style.setProperty("display", "flex");
+            // row.style.setProperty("flex-direction", "column");
+            row.style.setProperty("flex-direction", "row");
+            row.style.setProperty("flex-wrap", "nowrap");
 
             // 根据层级创建单元格
             for(let i = 0; i < maxIndexLevel + 1; i++) {
                 const cell = document.createElement("span");
-                cell.style.setProperty("text-align", "center");
                 cell.style.setProperty("min-height", "1.4rem");
-                cell.style.setProperty("padding-left", "0.6rem");
-                cell.classList.add('flex-row', 'items-center',);
+                cell.style.setProperty("padding-left", "0.4rem");
+                cell.style.setProperty("display", "flex");
+                cell.style.setProperty("flex-direction", "row");
+                cell.style.setProperty("flex-wrap", "nowrap");
                 
                 // 设置单元格宽度
                 if(i === maxIndexLevel) {
@@ -169,11 +185,11 @@ class DanCityYieldsTooltipType {
                 // - 第1列的有数值 (indexLevel=1) ，显示上面的横线
                 // - 递归2层及以上的 (indexLevel>1) ，横线都不显示
                 const isFirstRow = table.childElementCount === 0;
-                const showTopBorder = !isFirstRow && indexLevel == 1;  //莫名的bug，有isModifier加成的会被判断是第一行，从而不显示横线
+                const showTopBorder = !isFirstRow && indexLevel == 1;  //有点bug，下面修
                 if(showTopBorder) {
                     cell.style.setProperty("border-top", "0.06rem solid #877b6544");
                 }
-                // 修bug的，原因不明，所以这里加了个判断
+                // 莫名的bug，有isModifier加成的会被判断是第一行，从而不显示横线
                 if(child.isModifier && indexLevel === 1) {
                     cell.style.setProperty("border-top", "0.06rem solid #877b6544");
                 }
@@ -187,18 +203,33 @@ class DanCityYieldsTooltipType {
                 
                 // 单元格内容
                 if(i === maxIndexLevel) {  // 标签列
-                    let displayLabel = child.label;
+                    let displayLabel ='';
+                    if (indexLevel == 2) {
+                        displayLabel = '•';
+                    } 
                     // 修复本地化缺失：幸福感赤字
-                    if (displayLabel == "LOC_ATTR_CLAMPED_HAPPINESS_DEFICIT") {
-                        displayLabel = Locale.compose("LOC_ATTR_HAPPINESS_DEFICIT");
+                    if (child.label == "LOC_ATTR_CLAMPED_HAPPINESS_DEFICIT") {
+                        displayLabel += Locale.compose("LOC_ATTR_HAPPINESS_DEFICIT");
+                    } else {
+                        displayLabel += Locale.compose(child.label);
                     }
-                    cell.style.setProperty("text-align", "left");
+
                     cell.style.setProperty("border-left", "0.06rem solid #877b6588");
                     cell.innerHTML = displayLabel;
                     cell.innerHTML = Locale.stylize(cell.innerHTML);
                 }
                 else if(i === indexLevel - 1) {  // 数值列
-                    const displayValue = child.isNegative ? child.value : `+${child.value}`;
+                    cell.classList.add('justify-end');  // 数值列右对齐
+                    // cell.style.setProperty("white-space", "nowrap");    // 添加文字不换行的样式
+                    cell.style.setProperty("padding-right", "0.4rem");
+                    let displayValue = '';
+                    if (child.value) {
+                        if (child.valueType == -1) {
+                            displayValue = child.value;
+                        } else {
+                            displayValue = child.isNegative ? child.value : `+${child.value}`;
+                        }
+                    }
                     cell.innerHTML = displayValue;
                     cell.innerHTML = Locale.stylize(cell.innerHTML);
                     // 如果是第1列的数值，加粗显示
@@ -239,20 +270,28 @@ class DanCityYieldsTooltipType {
         if (!yieldData) return;
 
         // 设置标题和内容
-        let value = "";
-        if (this.target.value !== undefined && this.target.value !== null) {
-            value = this.target.value > 0 ? `+${this.target.value}` : this.target.value;
+        let value;
+        if (this.target.value) {
+            if (yieldData.valueType == -1) {
+                value = this.target.value;
+            } else {
+                value = !yieldData.isNegative ? `+${this.target.value}` : this.target.value;
+            }
         }
         // 确保label存在
         const label = this.target.label || Locale.toUpper(Locale.compose('LOC_LEADER_UNKNOWN_NAME'));
         this.yieldTitle.innerHTML = `${value} ${label}`;
         this.yieldTitle.innerHTML = Locale.stylize(this.yieldTitle.innerHTML);
         // 移除所有已存在的 yield type 类名
-        Object.values(yieldTypeTextClassMap).forEach(className => {
-            this.yieldTitle.classList.remove(className);
-        });
+        // Object.values(yieldTypeTextClassMap).forEach(className => {
+        //     this.yieldTitle.classList.remove(className);
+        // });
         this.yieldTitle.classList.add( yieldTypeTextClassMap[this.target.type], );
         this.description.innerHTML = this.buildYieldTooltipContent(yieldData);
+
+        //debug
+        // console.error("F1rstDan debug yieldTitle.innerHTML:" + this.yieldTitle.innerHTML);
+        // console.error("F1rstDan debug description.innerHTML:" + this.description.innerHTML);
 
         // 打印完整的DOM结构
         // 使用JSON.stringify()来格式化输出对象结构
@@ -282,6 +321,7 @@ class DanCityYieldsTooltipType {
     }
 
     isBlank() {
+        // return this.target.childData;
         return !this.target;  // 用target判断是否显示tooltip
     }
 }

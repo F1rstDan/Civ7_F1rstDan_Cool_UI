@@ -27,6 +27,10 @@
                     <Item>ui/production-chooser/city-yields.js</Item>
                     <!-- <Item>ui/production-chooser/panel-production-chooser.js</Item> -->
                 </ImportFiles>
+				<ImportFiles>
+					<Item>textures/F1dan_city_population.png</Item>
+					<Item>textures/F1dan_city_connectivity.png</Item>
+				</ImportFiles>
 				<UIScripts>
 					<Item>ui/dan-city-yields-tooltip.js</Item>
 				</UIScripts>
