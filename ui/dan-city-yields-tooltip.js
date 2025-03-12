@@ -222,6 +222,7 @@ class DanCityYieldsTooltipType {
                     cell.classList.add('justify-end');  // 数值列右对齐
                     // cell.style.setProperty("white-space", "nowrap");    // 添加文字不换行的样式
                     cell.style.setProperty("padding-right", "0.4rem");
+                    cell.style.setProperty("padding-left", "0rem");
                     let displayValue = '';
                     if (child.value) {
                         if (child.valueType == -1) {

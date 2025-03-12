@@ -66,7 +66,8 @@ export class CityYieldsBar extends Component {
             }
             icon.classList.add("size-8", 'bg-no-repeat', 'bg-center');
             const valueStr = String(value);
-            const text = document.createTextNode(valueStr.endsWith('.0') ? valueStr.slice(0, -2) : valueStr);
+            const text = document.createTextNode(valueStr.endsWith('.0') || valueStr.endsWith(',0') ? 
+                valueStr.slice(0, -2) : valueStr);   // 省略'.0'或',0'
             const container = document.createElement('div');
             container.role = "paragraph";
             container.ariaLabel = `${value} ${label}`;
@@ -85,7 +86,8 @@ export class CityYieldsBar extends Component {
             this.yieldElements.set(type, { text, icon, container });
         } else {
             const valueStr = String(value);
-            yieldElements.text.nodeValue = valueStr.endsWith('.0') ? valueStr.slice(0, -2) : valueStr;
+            yieldElements.text.nodeValue = valueStr.endsWith('.0') || valueStr.endsWith(',0') ? 
+                valueStr.slice(0, -2) : valueStr;   // 省略'.0'或',0'
             // 更新tooltip内容
             // 先检查container是否存在
             if (yieldElements.container) {
@@ -158,7 +160,7 @@ export class CityYieldsBar extends Component {
                 childData: [],
             };
             // 添加 城市人口
-            const cityPopData = this.addChildYieldData(dataPopulation, Locale.compose("LOC_HOF_GRAPH_CITY_POPULATION"), cityAllPop);
+            const cityPopData = this.addChildYieldData(dataPopulation, Locale.compose("LOC_UI_CITY_INTERACT_CURENT_POPULATION_HEADER"), cityAllPop);
 
             const pendingPop = city.pendingPopulation;              // 待建设人口
             const ruralPop = city.ruralPopulation - pendingPop;     // 乡村人口

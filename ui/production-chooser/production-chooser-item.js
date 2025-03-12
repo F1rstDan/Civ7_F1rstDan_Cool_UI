@@ -12,6 +12,15 @@ styleElement.innerHTML = `
     .dan-border-radius {
         border-radius: 0.55rem 0.11rem;
     }
+    .f1dan-size-5 .advisor-recommendation__container .advisor-recommendation__icon {
+	width: 1.1rem;
+	height: 1.1rem;
+    }
+    .f1dan-size-8-adjust .size-8 {
+	width: 1.3rem;
+	height: 1.3rem;
+    margin-right: 0rem;
+    }
 `;
 document.head.appendChild(styleElement);
 export const UpdateProductionChooserItem = (element, data, isPurchase) => {
@@ -113,17 +122,17 @@ export class ProductionChooserItem extends FxsChooserItem {
         // 主要信息区
         this.mainInfoArea = document.createElement('div');  // add
             this.mainInfoTopRow = document.createElement('div');  // add
+                this.agelessContainer = document.createElement('div');
                 this.itemNameElement = document.createElement('span');
+                this.recommendationsContainer = document.createElement('div');
             this.errorTextElement = document.createElement('span');
             this.mainInfoDetailsRow = document.createElement('div');  // add
                 this.secondaryDetailsElement = document.createElement('span');
                 this.maintenanceElement = document.createElement('span'); // 新增维护费
-        // 推荐图标
-        this.recommendationsContainer = document.createElement('div');
+
         // 右侧执行信息区
         this.rightInfoArea = document.createElement('div');  // add
             this.rightTopRow = document.createElement('div');  // add
-                this.agelessContainer = document.createElement('div');
             this.costContainer = document.createElement('div');
                 this.productionCostContainer = document.createElement('span');  // add
                     this.productionCostElement = document.createElement('span');  // add
@@ -150,7 +159,7 @@ export class ProductionChooserItem extends FxsChooserItem {
         this.container.classList.add('p-1', 'font-title');
     
         // ==================== 主内容区域 ====================
-        // 【结构说明】左侧图标 | 主要信息区 | 游戏推荐图标 | 右侧执行信息区
+        // 【结构说明】左侧图标 | 主要信息区 | 右侧执行信息区
         
         // ===== 左侧图标 =====
         this.iconElement.classList.add('size-12', 'bg-contain', 'bg-center', 'bg-no-repeat', 'mr-2');
@@ -158,37 +167,33 @@ export class ProductionChooserItem extends FxsChooserItem {
     
         // ===== 主要信息区（名称/维护费/错误信息/次要详情） =====
         this.mainInfoArea.className = 'relative flex flex-col flex-auto justify-start items-start';
-        // ———— 顶部行（名称 + ） ————
+        // ———— 顶部行（无时代标记 + 名称 + 推荐图标 ） ————
+        this.agelessContainer.className = 'hidden flex items-center';    // 无时代限制标记
+        this.agelessContainer.innerHTML = `
+            <img src="fs://game/city_ageless.png" class="size-4 mx-1"/>
+        `;
         this.mainInfoTopRow.className = 'flex flex-shrink items-center';
-        this.itemNameElement.className = 'font-title text-accent-2 uppercase tracking-100 text-sm'; // 物品名称
-        this.mainInfoTopRow.appendChild(this.itemNameElement);
+        this.itemNameElement.className = 'font-title text-accent-2 uppercase tracking-100 text-sm max-w-64'; // 物品名称
+        this.recommendationsContainer.className = 'flex items-center justify-center ml-2 f1dan-size-5'; // 游戏推荐图标
+        this.mainInfoTopRow.append(this.agelessContainer, this.itemNameElement, this.recommendationsContainer);
         // ———— 错误信息（覆盖在信息区上方） ————
-        this.errorTextElement.className = 'font-body text-negative-light z-1 pointer-events-none';
+        this.errorTextElement.className = 'font-body text-negative-light z-1 pointer-events-none max-w-64';
         // ———— 单位详情数据（次要数据 + 维护费） ————
-        this.mainInfoDetailsRow.className = 'flex flex-shrink items-center';
-        this.secondaryDetailsElement.className = 'invisible flex items-center font-bold';   // 单位数据，默认隐藏
+        this.mainInfoDetailsRow.className = 'flex flex-shrink items-center max-w-64';
+        this.secondaryDetailsElement.className = 'invisible flex items-center font-bold f1dan-size-8-adjust';   // 单位数据，默认隐藏
         this.maintenanceElement.className = 'flex text-xs text-negative-light font-bold px-1 production-chooser-tooltip__subtext-bg opacity-80 hidden dan-border-radius';  // 维护费
         this.mainInfoDetailsRow.append(this.secondaryDetailsElement, this.maintenanceElement);
         
         this.mainInfoArea.append(this.mainInfoTopRow, this.errorTextElement, this.mainInfoDetailsRow);
         this.container.appendChild(this.mainInfoArea);
-    
-        // ===== 游戏推荐图标（独立区域） =====
-        this.recommendationsContainer.className = 'flex items-center justify-center mr-2';
-        this.container.appendChild(this.recommendationsContainer);
-    
+
         // ===== 右侧执行信息区（无时代标记/成本/生产力消耗） =====
-        this.rightInfoArea.className = 'relative flex flex-col items-end justify-start';
-        // ———— 右上角容器（无时代标记） ————
-        this.rightTopRow.className = 'flex items-center';
-        this.agelessContainer.className = 'invisible flex items-center';    // 无时代限制标记
-        this.agelessContainer.innerHTML = `
-            <div class="font-title uppercase text-accent-2" data-l10n-id="LOC_UI_PRODUCTION_AGELESS"></div>
-            <img src="fs://game/city_ageless.png" class="size-4 mx-1"/>
-        `;
-        this.rightTopRow.appendChild(this.agelessContainer);
+        this.rightInfoArea.className = 'relative flex flex-col items-center justify-center';
+        // ———— 右上角容器（ ） ————
+        // this.rightTopRow.className = 'flex items-center';
+        // this.rightTopRow.appendChild(this.agelessContainer);
         // ———— 右下角容器（成本及生产力消耗） ————
-        this.costContainer.className = 'flex items-center font-bold';
+        this.costContainer.className = 'flex items-center justify-center font-bold';
         this.productionCostContainer.className = 'flex items-center mx-3 production-chooser-tooltip__subtext-bg rounded hidden';    // 生产力花费
         const productionIcon = document.createElement('fxs-icon');
         productionIcon.setAttribute('data-icon-id', 'YIELD_PRODUCTION');
@@ -208,6 +213,8 @@ export class ProductionChooserItem extends FxsChooserItem {
     updateCostIconElement() {
         const costIcon = this.isPurchase ? 'Yield_Gold' : 'hud_turn-timer';
         this.costIconElement.style.setProperty('background-image', `url(${costIcon})`);
+        const altText = Locale.compose(this.isPurchase ? "LOC_YIELD_GOLD" : "LOC_UI_CITY_INSPECTOR_TURNS");
+        this.costIconElement.ariaLabel = altText;
     }
     createRecommendationElements(recommendationList) {
         this.recommendationsContainer.innerHTML = '';
@@ -251,8 +258,13 @@ export class ProductionChooserItem extends FxsChooserItem {
                 }
                 break;
             case 'data-is-ageless':
-                const isAgeless = newValue === 'true';
-                this.agelessContainer.classList.toggle('invisible', !isAgeless);
+                // const isAgeless = newValue === 'true';
+                // this.agelessContainer.classList.toggle('invisible', !isAgeless);
+                if (newValue === 'true') {
+                    this.agelessContainer.classList.remove('hidden');
+                } else {
+                    this.agelessContainer.classList.add('hidden');
+                }
                 break;
             case 'data-secondary-details': {
                 if (newValue) {

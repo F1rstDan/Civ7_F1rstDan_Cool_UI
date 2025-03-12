@@ -23,9 +23,11 @@
             </Properties>
             <Actions>
                 <ImportFiles>
-                    <Item>ui/production-chooser/production-chooser-item.js</Item>
                     <Item>ui/production-chooser/city-yields.js</Item>
-                    <!-- <Item>ui/production-chooser/panel-production-chooser.js</Item> -->
+                    <Item>ui/production-chooser/panel-production-chooser.js</Item>
+                    <Item>ui/production-chooser/production-chooser-item.js</Item>
+                    <Item>ui/production-chooser/production-chooser-unique-quarter.js</Item>
+                    <Item>ui/production-chooser/dan-quick-buy-item.js</Item>
                 </ImportFiles>
 				<ImportFiles>
 					<Item>textures/F1dan_city_population.png</Item>
@@ -39,5 +41,6 @@
     </ActionGroups>
     <LocalizedText>
         <File>text/en_us/ModInfoText.xml</File>
+        <File>text/zh_Hans_CN/ModInfoText.xml</File>
     </LocalizedText>
 </Mod>
