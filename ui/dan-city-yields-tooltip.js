@@ -122,15 +122,15 @@ class DanCityYieldsTooltipType {
         return tooltipContent.innerHTML;
     }
     // 为tooltip内容 进行递归处理子数据
-    tooltipAppendData(tooltipContent, childData, indexLevel) {
+    tooltipAppendData(tooltipContent, childData, indexLevel, exData = {}) {
         const maxIndexLevel = 2;   // 设置最大递归层级
         
         // 创建表格容器
         const tableContainer = document.createElement("div");
         tableContainer.style.setProperty("width", "auto");
         if (indexLevel === 1) {
-            tableContainer.style.setProperty("margin-left", "0.8rem");
-            tableContainer.style.setProperty("margin-right", "0.8rem");
+            tableContainer.style.setProperty("margin-left", "0.4rem");
+            tableContainer.style.setProperty("margin-right", "0.4rem");
         }
 
         // 创建表格
@@ -144,11 +144,18 @@ class DanCityYieldsTooltipType {
         for (const child of childData) {
             if (child.valueType >= 5) continue; // 如果 child.valueType 大于等于 5，则跳过当前循环
 
+            // 负数使下级数值翻转正负。如果是 "label": "减去扣除"
+            // 使用 exData 传递给下级，层层传递
+            let isNegativeChildren = exData && exData.isNegativeChildren ? exData.isNegativeChildren : false;
+            if (child.label == Locale.compose("LOC_ATTR_YIELD_MINUS_DEDUCTIONS")) {
+                isNegativeChildren = true;
+            }
+
             let expandMore = false; // 展开更多有用信息，代替它的层级。
             if (!expandMore) { expandMore = child.label == Locale.compose("LOC_ATTR_SOURCES"); }                // 如果 "label": "来源",则展开详情（自己消失，代替层级）
             if (!expandMore) { expandMore = child.label == Locale.compose("LOC_ATTR_HAPPINESS_DEDUCTION"); }    // 如果 "label": "快乐值减益",则展开详情（自己消失，代替层级）
             if (expandMore && child.childData && child.childData.length > 0) {
-                this.tooltipAppendData(tooltipContent, child.childData, indexLevel);
+                this.tooltipAppendData(tooltipContent, child.childData, indexLevel, {isNegativeChildren: isNegativeChildren});
                 continue;
             }
 
@@ -194,11 +201,18 @@ class DanCityYieldsTooltipType {
                     cell.style.setProperty("border-top", "0.06rem solid #877b6544");
                 }
 
+                let isNegative = child.isNegative;
+                // 如果在"减去扣除"下级，数值正负翻转
+                if(exData && exData.isNegativeChildren) {
+                    isNegative = !child.isNegative;
+                }
+
                 // 如果是加成，加粗显示。正面黄色，负面红色
-                if(child.isModifier && !child.isNegative) {
-                    cell.classList.add('font-bold', 'text-gradient-secondary');
-                } else if(child.isNegative) {
-                    cell.classList.add('font-bold', 'text-gradient-negative');
+                if(child.isModifier) cell.classList.add('font-bold');
+                if(child.isModifier && !isNegative) {
+                    cell.classList.add('text-gradient-secondary');
+                } else if(isNegative){
+                    cell.classList.add('text-gradient-negative');
                 }
                 
                 // 单元格内容
@@ -215,8 +229,7 @@ class DanCityYieldsTooltipType {
                     }
 
                     cell.style.setProperty("border-left", "0.06rem solid #877b6588");
-                    cell.innerHTML = displayLabel;
-                    cell.innerHTML = Locale.stylize(cell.innerHTML);
+                    cell.innerHTML = Locale.stylize(displayLabel);
                 }
                 else if(i === indexLevel - 1) {  // 数值列
                     cell.classList.add('justify-end');  // 数值列右对齐
@@ -227,20 +240,29 @@ class DanCityYieldsTooltipType {
                     if (child.value) {
                         if (child.valueType == -1) {
                             displayValue = child.value;
+                        } else if (exData && exData.isNegativeChildren)  {
+                            if (child.isNegative == false) {
+                                displayValue = `-${child.value}`;
+                            } else {
+                                // 检查值是否已经有负号，如果有则去掉，然后添加加号
+                                let valueStr = String(child.value);
+                                if (valueStr.startsWith('-')) {
+                                    valueStr = valueStr.substring(1); // 去掉负号
+                                }
+                                displayValue = `+${valueStr}`;
+                            }
                         } else {
-                            displayValue = child.isNegative ? child.value : `+${child.value}`;
+                            displayValue = isNegative ? child.value : `+${child.value}`;
                         }
                     }
-                    cell.innerHTML = displayValue;
-                    cell.innerHTML = Locale.stylize(cell.innerHTML);
+                    cell.innerHTML = Locale.stylize(displayValue);
                     // 如果是第1列的数值，加粗显示
                     if(indexLevel == 1) {
                         cell.classList.add('font-bold');
                     }
                 }
                 else {  // 空单元格
-                    cell.innerHTML = "&nbsp;";
-                    cell.innerHTML = Locale.stylize(cell.innerHTML);
+                    cell.innerHTML = Locale.stylize("&nbsp;");
                 }
                 
                 row.appendChild(cell);
@@ -253,7 +275,7 @@ class DanCityYieldsTooltipType {
 
             // 递归处理子数据，默认最多递归2级。maxIndexLevel可设置
             if (child.childData && child.childData.length > 0 && indexLevel < maxIndexLevel) {
-                this.tooltipAppendData(table, child.childData, indexLevel + 1);
+                this.tooltipAppendData(table, child.childData, indexLevel + 1, {isNegativeChildren: isNegativeChildren});
             }
         }
 
@@ -281,8 +303,7 @@ class DanCityYieldsTooltipType {
         }
         // 确保label存在
         const label = this.target.label || Locale.toUpper(Locale.compose('LOC_LEADER_UNKNOWN_NAME'));
-        this.yieldTitle.innerHTML = `${value} ${label}`;
-        this.yieldTitle.innerHTML = Locale.stylize(this.yieldTitle.innerHTML);
+        this.yieldTitle.innerHTML = Locale.stylize(`${value} ${label}`);
         // 移除所有已存在的 yield type 类名
         // Object.values(yieldTypeTextClassMap).forEach(className => {
         //     this.yieldTitle.classList.remove(className);

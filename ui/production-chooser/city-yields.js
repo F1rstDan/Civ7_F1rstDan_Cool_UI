@@ -143,7 +143,24 @@ export class CityYieldsBar extends Component {
             const isNegative = false;
             const isModifier = false;
             const valueType = -1;
-
+            // 一些共用数值
+            // 城市连接信息
+            const connectedCities = city.getConnectedCities ? city.getConnectedCities() : [];
+            let conectedCityCount = 0;
+            let conectedTownCount = 0;
+            if (connectedCities && connectedCities.length > 0) {
+                // 统计城市和乡镇数量
+                for (const connectedCityID of connectedCities) {
+                    const connectedCity = Cities.get(connectedCityID);
+                    if (connectedCity) {
+                        if (connectedCity.isTown) {
+                            conectedTownCount++;
+                        } else {
+                            conectedCityCount++;
+                        }
+                    }
+                }
+            }
             // 【添加人口相关数据】 ==============================================
             const cityAllPop = city.population;
             const dataPopulation = {
@@ -162,25 +179,40 @@ export class CityYieldsBar extends Component {
             // 添加 城市人口
             const cityPopData = this.addChildYieldData(dataPopulation, Locale.compose("LOC_UI_CITY_INTERACT_CURENT_POPULATION_HEADER"), cityAllPop);
 
-            const pendingPop = city.pendingPopulation;              // 待建设人口
+            const pendingPop = city.pendingPopulation;              // 待放置人口
             const ruralPop = city.ruralPopulation - pendingPop;     // 乡村人口
             const urbanPop = city.urbanPopulation;                  // 市区人口
-            const specialistPop = cityAllPop - pendingPop - ruralPop - urbanPop; // 专家人口
+            const specialistPop = city.Workers.getNumWorkers(false);  // 专家人口
+            const migrantPop = cityAllPop - pendingPop - ruralPop - urbanPop - specialistPop;    // 移民人口
             this.addChildYieldData(cityPopData, Locale.compose("LOC_UI_CITY_STATUS_RURAL_POPULATION"), ruralPop);
             this.addChildYieldData(cityPopData, Locale.compose("LOC_UI_CITY_STATUS_URBAN_POPULATION"), urbanPop);
             // 专家人口 `（每个地块最多{1_SpecialistMax}名）`"LOC_UI_ACQUIRE_TILE_ADD_POPULATION_MAX_PER_TILE"
-            let textSpecialistMax = ''; 
-            if (city.Workers) {
-                textSpecialistMax = Locale.compose("LOC_UI_ACQUIRE_TILE_ADD_POPULATION_MAX_PER_TILE",city.Workers.getCityWorkerCap());
-            } else {
-                console.error(`F1rstDan city-yields - failed to find valid city workers for city ${this.cityID}`);
+            const specialistMax = city.Workers.getCityWorkerCap();
+            const textSpecialistMax = Locale.compose("LOC_UI_ACQUIRE_TILE_ADD_POPULATION_MAX_PER_TILE",specialistMax);
+            // 专家人口大于0显示， 是城市且放置专家上限大于0显示。（这样初期不会显示了）
+            if ( specialistPop > 0 || (!city.isTown && specialistMax > 0) ) {
+                this.addChildYieldData(cityPopData, Locale.compose("LOC_UI_SPECIALISTS_SUBTITLE")+' [B]'+textSpecialistMax+'[/B]', specialistPop);
             }
-            this.addChildYieldData(cityPopData, Locale.compose("LOC_ATTR_NUM_WORKERS_ON_TILE")+' '+textSpecialistMax, specialistPop);
-            // 待建设人口
-            this.addChildYieldData(cityPopData, Locale.compose("LOC_DIPLOMACY_START_PENDING_PROJECTS_TITLE"), pendingPop);
+            // 待放置人口，如果大于0才显示
+            if (pendingPop > 0) {
+                this.addChildYieldData(cityPopData, Locale.compose("LOC_RESOURCE_UNASSIGNED"), pendingPop);
+            }
+            // 移民人口，如果大于0才显示
+            if (migrantPop > 0) {
+                this.addChildYieldData(cityPopData, Locale.compose("LOC_UNIT_MIGRANT_NAME"), migrantPop);
+            }
             
             // X回合后出现新市民
-            this.addChildYieldData(dataPopulation, Locale.compose("LOC_UI_CITY_DETAILS_NEW_CITIZEN_IN_TURNS",""), city.Growth.turnsUntilGrowth);
+            if (city.isTown && city.Growth?.growthType == GrowthTypes.PROJECT && conectedCityCount > 0) {
+                // 如果是城镇并且专业化，连接城市大于0，则表示输送食物不涨人口。文本红色，加上“∞”回合后。数值正常显示
+                this.addChildYieldData(dataPopulation, 
+                    Locale.compose("LOC_UI_CITY_DETAILS_NEW_CITIZEN_IN_TURNS","∞"), city.Growth.turnsUntilGrowth, 
+                    {isNegative: true}
+                );
+            } else {
+                // 正常情况下显示回合数
+                this.addChildYieldData(dataPopulation, Locale.compose("LOC_UI_CITY_DETAILS_NEW_CITIZEN_IN_TURNS",city.Growth.turnsUntilGrowth), city.Growth.turnsUntilGrowth);
+            }
             
             // 所需粮食数据
             const requiredFood = city.Growth.getNextGrowthFoodThreshold().value.toFixed(1);
@@ -208,30 +240,15 @@ export class CityYieldsBar extends Component {
             };
 
             // 获取城市连接信息
-            const connectedCities = city.getConnectedCities ? city.getConnectedCities() : [];
             if (connectedCities && connectedCities.length > 0) {
-                let cityCount = 0;
-                let townCount = 0;
-                
-                // 统计城市和乡镇数量
-                for (const connectedCityID of connectedCities) {
-                    const connectedCity = Cities.get(connectedCityID);
-                    if (connectedCity) {
-                        if (connectedCity.isTown) {
-                            townCount++;
-                        } else {
-                            cityCount++;
-                        }
-                    }
-                }
 
                 if (!city.isTown) {
                     // 城市数据结构
                     // 1. 连接城市数据
-                    if (cityCount > 0) {
+                    if (conectedCityCount > 0) {
                         const citiesData = this.addChildYieldData(dataConnectivity, 
-                            '[icon:YIELD_CITIES]' + Locale.compose("LOC_ATTR_NUM_CITIES"), 
-                            '[icon:YIELD_CITIES]' + cityCount);
+                            '[B]' + Locale.compose("LOC_UI_SETTLEMENT_TAB_BAR_CITIES") + '[/B]', 
+                            '[icon:YIELD_CITIES]' + conectedCityCount);
                         
                         // 添加具体城市名称
                         for (const connectedCityID of connectedCities) {
@@ -244,10 +261,10 @@ export class CityYieldsBar extends Component {
 
                     // 2. 连接乡镇数据
                     let totalReceivedFood = 0;
-                    if (townCount > 0) {
+                    if (conectedTownCount > 0) {
                         const townsData = this.addChildYieldData(dataConnectivity, 
-                            '[icon:YIELD_TOWNS]' + Locale.compose("LOC_ATTR_NUM_TOWNS"), 
-                            '[icon:YIELD_TOWNS]' + townCount);
+                            '[B]' + Locale.compose("LOC_UI_SETTLEMENT_TAB_BAR_TOWNS") + '[/B]', 
+                            '[icon:YIELD_TOWNS]' + conectedTownCount);
                         
                         // 添加具体乡镇名称和食物数据
                         for (const connectedCityID of connectedCities) {
@@ -286,7 +303,7 @@ export class CityYieldsBar extends Component {
                     // 3. 总共获得食物
                     if (totalReceivedFood > 0) {
                         this.addChildYieldData(dataConnectivity, 
-                            '[icon:YIELD_FOOD]' + Locale.compose("LOC_ATTR_YIELD_INCOME"), 
+                            '[icon:YIELD_FOOD]' + Locale.compose("LOC_GLOBAL_YIELDS_SUMMARY_TOTAL_INCOME"), 
                             '[icon:YIELD_FOOD]+' + totalReceivedFood.toFixed(1), 
                             {
                                 // valueType: 1,
@@ -298,15 +315,15 @@ export class CityYieldsBar extends Component {
                     // 乡镇数据结构
                     // 1. 连接城市数据
                     let townFoodYield;
-                    if (cityCount > 0) {
+                    if (conectedCityCount > 0) {
                         const citiesData = this.addChildYieldData(dataConnectivity, 
-                            '[icon:YIELD_CITIES]' + Locale.compose("LOC_ATTR_NUM_CITIES"), 
-                            '[icon:YIELD_CITIES]' + cityCount);
+                            '[B]' + Locale.compose("LOC_UI_SETTLEMENT_TAB_BAR_CITIES") + '[/B]', 
+                            '[icon:YIELD_CITIES]' + conectedCityCount);
                         
                         // 如果是专业化城镇，并且有食物产出，则添加食物输送数据
                         townFoodYield = city.Yields?.getNetYield(YieldTypes.YIELD_FOOD);
                         if (townFoodYield > 0 && city.Growth?.growthType == GrowthTypes.PROJECT) {
-                            const foodPerCity = townFoodYield / cityCount;
+                            const foodPerCity = townFoodYield / conectedCityCount;
                             
                             // 更新城市条目，添加食物输送数据
                             for (const connectedCityID of connectedCities) {
@@ -334,10 +351,10 @@ export class CityYieldsBar extends Component {
                         }
                     }
                     // 2. 连接乡镇数据
-                    if (townCount > 0) {
+                    if (conectedTownCount > 0) {
                         const townsData = this.addChildYieldData(dataConnectivity, 
-                            '[icon:YIELD_TOWNS]' + Locale.compose("LOC_ATTR_NUM_TOWNS"), 
-                            '[icon:YIELD_TOWNS]' + townCount);
+                            '[B]' + Locale.compose("LOC_UI_SETTLEMENT_TAB_BAR_TOWNS") + '[/B]', 
+                            '[icon:YIELD_TOWNS]' + conectedTownCount);
                         
                         // 添加具体乡镇名称
                         for (const connectedCityID of connectedCities) {
@@ -348,16 +365,17 @@ export class CityYieldsBar extends Component {
                         }
                     }
                     // 3. 总共输出食物 - 只有在专业化且有食物产出时才显示
-                    if (townFoodYield > 0 && city.Growth?.growthType == GrowthTypes.PROJECT) {
-                        this.addChildYieldData(dataConnectivity, 
-                            '[icon:YIELD_FOOD]' + Locale.compose("LOC_ATTR_YIELD_MINUS_DEDUCTIONS"), 
-                            '[icon:YIELD_FOOD]' + (-townFoodYield).toFixed(1), 
-                            {
-                                icon: "YIELD_FOOD",
-                                iconContext: "YIELD",
-                                isNegative: true
-                            });
-                    }
+                    // 没必要显示，有些冗余，因为必然是食物产量
+                    // if (townFoodYield > 0 && city.Growth?.growthType == GrowthTypes.PROJECT) {
+                    //     this.addChildYieldData(dataConnectivity, 
+                    //         '[icon:YIELD_FOOD]' + Locale.compose("LOC_ATTR_YIELD_MINUS_DEDUCTIONS"), 
+                    //         '[icon:YIELD_FOOD]' + (-townFoodYield).toFixed(1), 
+                    //         {
+                    //             icon: "YIELD_FOOD",
+                    //             iconContext: "YIELD",
+                    //             isNegative: true
+                    //         });
+                    // }
                 }
 
                 // 更新连接总数
@@ -366,27 +384,13 @@ export class CityYieldsBar extends Component {
             }
 
             // 3. 添加贸易路线信息（如果有）
-            if (city.TradeRoutes) {
-                const tradeRoutes = city.TradeRoutes.getOutgoingRoutes();
-                if (tradeRoutes && tradeRoutes.length > 0) {
-                    const tradeData = this.addChildYieldData(dataConnectivity, 
-                        Locale.compose("LOC_UI_TRADE_ROUTES"), 
-                        tradeRoutes.length, 
-                        {
-                            icon: "YIELD_GOLD",
-                            iconContext: "YIELD"
-                        });
-                    
-                    for (const route of tradeRoutes) {
-                        const destCity = Cities.get(route.destinationID);
-                        if (destCity) {
-                            this.addChildYieldData(tradeData, 
-                                Locale.compose("LOC_UI_TRADE_ROUTE_TO", destCity.name), 
-                                "");
-                        }
-                    }
-                }
+            // 定居点未连接到帝国的贸易网络。
+            if (city.Trade && city.Trade.isInTradeNetwork() == false) {
+                this.addChildYieldData(dataConnectivity, Locale.compose("LOC_UI_RESOURCE_ALLOCATION_SETTLEMENT_DISCONNECTED"), "",{isNegative: true});
+                // console.error("F1rstDan CityYield isInTradeNetwork");
             }
+            // TODO: 增加贸易信息
+
             // 推送数据到yields数组
             yields.push(dataConnectivity);
             // 【结束】城市连通性数据  ==============================================
