@@ -2,7 +2,7 @@
 <Database>
     <EnglishText>
         <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_YIELDS_BAR_VALUE_FORMAT">
-            <Text>City - Yields Bar • Simplified display of income values ([icon: YIELD_FOOD] 29.9 -&gt; [icon:YIELD_FOOD]30)</Text>
+            <Text>City - Yields Bar • Simplified display of income values ([icon:YIELD_FOOD]29.9 -&gt; [icon:YIELD_FOOD]30)</Text>
         </Row>
         <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_YIELDS_BAR_VALUE_FORMAT_DESCRIPTION">
             <Text>You can choose to simplify the display of the figures in the income column.

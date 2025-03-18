@@ -108,8 +108,13 @@ export class DanCityYieldsDecorator {
         const formatValue = (value) => {
             let valueStr = String(value);
             if (this.isYieldsBarValueFormat) {
-                valueStr = Math.round(Number(value)).toString();
+                // 处理不同语言的小数点格式（点或逗号）
+                const numValue = Number(valueStr.replace(',', '.'));
+                if (!isNaN(numValue)) {
+                    valueStr = Math.round(numValue).toString();
+                }
             } else {
+                // 处理小数点后为0的情况，支持点和逗号两种格式
                 valueStr = valueStr.endsWith('.0') || valueStr.endsWith(',0') ? valueStr.slice(0, -2) : valueStr;
             }
             return valueStr;

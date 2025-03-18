@@ -155,7 +155,7 @@ export class DanProductionItemDecorator {
 
         // 根元素
         this.updateClassList(this.item.Root, ['text-sm'], ['text-xs', 'leading-tight']);
-        this.updateClassList(this.item.container, ['p-2', 'tracking-100'], ['p-1', 'font-title']);
+        this.updateClassList(this.item.container, ['p-2', 'tracking-100'], ['p-1']);
 
         // 左侧图标区
         this.updateClassList(this.item.iconElement, ['size-16'], ['size-12']);
@@ -183,7 +183,7 @@ export class DanProductionItemDecorator {
         this.moveElement(this.item.secondaryDetailsElement, this.item.mainInfoDetailsRow);
         this.updateClassList(this.item.secondaryDetailsElement, '', 'font-bold f1dan-size-8-adjust');
         // 维护费元素
-        this.createCustomElement('maintenanceElement', 'span', 'flex text-xs text-negative-light font-bold px-1 opacity-80 hidden ', this.item.secondaryDetailsElement);
+        this.createCustomElement('maintenanceElement', 'span', 'flex text-xs text-negative-light font-bold px-1 hidden ', this.item.secondaryDetailsElement);
 
         // 【右侧执行信息区】 （生产力花费/制作成本）
         this.createCustomElement('rightInfoArea', 'div', 'relative flex flex-col items-center justify-center', this.item.container);
@@ -192,7 +192,7 @@ export class DanProductionItemDecorator {
         this.moveElement(this.item.costContainer, this.item.rightInfoArea, 'flex items-center justify-center font-bold');
         // 生产力花费容器
         this.createCustomElement('productionCostContainer', 'span', 'flex items-center mx-3 production-chooser-tooltip__subtext-bg rounded hidden', this.item.costContainer);
-        this.createCustomElement('productionCostAmount', 'span', 'text-xs text-primary-1 leading-tight ml-2', this.item.productionCostContainer);
+        this.createCustomElement('productionCostAmount', 'span', 'text-xs text-primary-1 leading-tight ml-2 font-title', this.item.productionCostContainer);
         this.createCustomElement('productionIcon', 'fxs-icon', 'size-5 mx-1', this.item.productionCostContainer);
         this.item.productionIcon.setAttribute('data-icon-id', 'YIELD_PRODUCTION');
         this.item.productionIcon.setAttribute('data-icon-context', 'YIELD');
@@ -311,7 +311,7 @@ export class DanProductionItemDecorator {
         //     return;
         // }
         // 如果维护费元素不存在，则创建
-        this.createCustomElement('maintenanceElement', 'span', 'flex text-xs text-negative-light font-bold px-1 opacity-80 hidden ', this.item.secondaryDetailsElement);
+        this.createCustomElement('maintenanceElement', 'span', 'flex text-xs text-negative-light font-bold px-1 hidden ', this.item.secondaryDetailsElement);
 
         // 获取维护费数据
         const element = this.item.Root;
@@ -410,7 +410,7 @@ export class DanProductionItemDecorator {
         if (!this.item.productionCostContainer) {
             // 生产力花费容器
             this.createCustomElement('productionCostContainer', 'span', 'flex items-center mx-3 production-chooser-tooltip__subtext-bg rounded hidden', this.item.costContainer);
-            this.createCustomElement('productionCostAmount', 'span', 'text-xs text-primary-1 leading-tight ml-2', this.item.productionCostContainer);
+            this.createCustomElement('productionCostAmount', 'span', 'text-xs text-primary-1 leading-tight ml-2 font-title', this.item.productionCostContainer);
             this.createCustomElement('productionIcon', 'fxs-icon', 'size-5 mx-1', this.item.productionCostContainer);
             this.item.productionIcon.setAttribute('data-icon-id', 'YIELD_PRODUCTION');
             this.item.productionIcon.setAttribute('data-icon-context', 'YIELD');
