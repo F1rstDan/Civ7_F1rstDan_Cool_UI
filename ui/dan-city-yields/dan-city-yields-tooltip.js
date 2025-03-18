@@ -22,13 +22,6 @@ styleElement.innerHTML = `
         color: #ce8f81;
     }
 `;
-    // .dan-city-yields-tooltip fxs-font-icon {
-    // flex-wrap: nowrap;
-    //     float: left;
-    //     white-space: nowrap;
-    //     position: absolute;
-    //     right: 0;
-    // }
 document.head.appendChild(styleElement);
 const yieldTypeTextClassMap = {
     'YIELD_FOOD': 'text-yield-food',
@@ -58,7 +51,7 @@ class DanCityYieldsTooltipType {
         // 创建标题组件
         this.yieldTitle = document.createElement("div");
         this.yieldTitle.style.setProperty('text-align', 'center');
-        this.yieldTitle.className = 'text-secondary font-title-lg uppercase text-center tracking-100'; 
+        this.yieldTitle.className = 'text-secondary font-title-lg uppercase text-center tracking-100 flex flex-auto justify-center items-center'; 
         
         // 创建分隔线
         this.divider = document.createElement("div");
@@ -79,7 +72,7 @@ class DanCityYieldsTooltipType {
         // 只清空内容，不移除节点
         this.yieldTitle.innerHTML = '';
         this.yieldTitle.style.setProperty('text-align', 'center');
-        this.yieldTitle.className = 'text-secondary font-title-lg uppercase text-center tracking-100'; 
+        this.yieldTitle.className = 'text-secondary font-title-lg uppercase text-center tracking-100 flex flex-auto justify-center items-center'; 
         this.description.innerHTML = '';
         // 如果需要移除额外添加的子节点，可以保留这部分逻辑
         // while (this.container.childElementCount > 2) { // 保留header和description
@@ -94,7 +87,6 @@ class DanCityYieldsTooltipType {
     isUpdateNeeded(target) {
         // 检查target是否发生变化
         if (this.target !== target) {
-            // console.error("F1rstDan debug isUpdateNeeded[" + `] : ${JSON.stringify(target)}`);
             this.target = target;
             return true;
         }
@@ -219,7 +211,7 @@ class DanCityYieldsTooltipType {
                 if(i === maxIndexLevel) {  // 标签列
                     let displayLabel ='';
                     if (indexLevel == 2) {
-                        displayLabel = '•';
+                        displayLabel = '• ';
                     } 
                     // 修复本地化缺失：幸福感赤字
                     if (child.label == "LOC_ATTR_CLAMPED_HAPPINESS_DEFICIT") {
@@ -304,16 +296,14 @@ class DanCityYieldsTooltipType {
         // 确保label存在
         const label = this.target.label || Locale.toUpper(Locale.compose('LOC_LEADER_UNKNOWN_NAME'));
         this.yieldTitle.innerHTML = Locale.stylize(`${value} ${label}`);
-        // 移除所有已存在的 yield type 类名
-        // Object.values(yieldTypeTextClassMap).forEach(className => {
-        //     this.yieldTitle.classList.remove(className);
-        // });
         this.yieldTitle.classList.add( yieldTypeTextClassMap[this.target.type], );
+        // TODO 如果子数据为空，则去 城市详细面板借数据显示
         this.description.innerHTML = this.buildYieldTooltipContent(yieldData);
 
         //debug
         // console.error("F1rstDan debug yieldTitle.innerHTML:" + this.yieldTitle.innerHTML);
         // console.error("F1rstDan debug description.innerHTML:" + this.description.innerHTML);
+        // console.error("F1rstDan debug yieldData[" + label + `] : ${JSON.stringify(yieldData)}`);
 
         // 打印完整的DOM结构
         // 使用JSON.stringify()来格式化输出对象结构
@@ -343,7 +333,6 @@ class DanCityYieldsTooltipType {
     }
 
     isBlank() {
-        // return this.target.childData;
         return !this.target;  // 用target判断是否显示tooltip
     }
 }

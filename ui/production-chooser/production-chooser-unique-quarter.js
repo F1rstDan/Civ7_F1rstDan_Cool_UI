@@ -8,11 +8,9 @@ export class UniqueQuarter {
         this.nameElement.setAttribute('data-l10n-id', value.Name);
         this.uqInfoCols.setAttribute('data-tooltip-content', value.Description);
     }
-    
     set numCompleted(value) {
         this.completionStatusText.textContent = Locale.compose('LOC_UI_PRODUCTION_QUARTER_BUILDINGS_COMPLETED', value);
     }
-    
     constructor() {
         this.root = document.createElement('div');
         this.uqInfoCols = document.createElement('div');
@@ -21,7 +19,6 @@ export class UniqueQuarter {
         this.buildingContainer = document.createElement('div');
         this.buildingElementOne = undefined;
         this.buildingElementTwo = undefined;
-        
         this.root.className = 'production-chooser__unique-quarter relative flex flex-col pointer-events-auto';
         this.uqInfoCols.className = 'flex items-center mx-2 mb-2 hover\\:text-accent-1 focus\\:text-accent-1';
         this.uqInfoCols.setAttribute('data-tooltip-anchor-offset', '20');
@@ -68,7 +65,6 @@ export class UniqueQuarter {
         this.buildingElementTwo = containerItemTwo;
         this.buildingContainer.append(this.buildingElementOne, this.buildingElementTwo);
     }
-    
     containsBuilding(item) {
         // 检查是否为容器元素或其子元素
         return this.buildingElementOne == item || this.buildingElementTwo == item ||
@@ -76,3 +72,5 @@ export class UniqueQuarter {
                (this.buildingElementTwo && this.buildingElementTwo.contains(item));
     }
 }
+
+//# sourceMappingURL=file:///base-standard/ui/production-chooser/production-chooser-unique-quarter.js.map

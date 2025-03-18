@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<Database>
+    <IconDefinitions>
+        <Row>
+            <ID>DAN_ICON_POPULATION</ID>
+            <Path>fs://game/F1dan_city_population.png</Path>
+            <Context>DEFAULT</Context>
+        </Row>
+        <Row>
+            <ID>DAN_ICON_CONNECTIVITY</ID>
+            <Path>fs://game/F1dan_city_connectivity.png</Path>
+            <Context>DEFAULT</Context>
+        </Row>
+        <Row>
+            <ID>DAN_ICON_TURN</ID>
+            <Path>fs://game/hud_turn-timer.png</Path>
+            <Context>DEFAULT</Context>
+        </Row>
+    </IconDefinitions>
+    <IconAliases>
+    </IconAliases>
+</Database>
