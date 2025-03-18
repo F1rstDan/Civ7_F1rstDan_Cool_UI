@@ -31,6 +31,7 @@
                 <UpdateText>
                     <Item>text/en_us/InGameText.xml</Item>
                     <Item>text/zh_Hans_CN/InGameText.xml</Item>
+                    <Item>text/ko_KR/InGameText.xml</Item>
                 </UpdateText>
             </Actions>
         </ActionGroup>
@@ -50,6 +51,7 @@
                 <UpdateText>
                     <Item>text/en_us/InGameText.xml</Item>
                     <Item>text/zh_Hans_CN/InGameText.xml</Item>
+                    <Item>text/ko_KR/InGameText.xml</Item>
                 </UpdateText>
             </Actions>
         </ActionGroup>
@@ -75,5 +77,6 @@
     <LocalizedText>
         <File>text/en_us/ModInfoText.xml</File>
         <File>text/zh_Hans_CN/ModInfoText.xml</File>
+        <File>text/ko_KR/ModInfoText.xml</File>
     </LocalizedText>
 </Mod>
