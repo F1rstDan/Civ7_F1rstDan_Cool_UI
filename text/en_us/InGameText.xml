@@ -2,7 +2,7 @@
 <Database>
     <EnglishText>
         <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_YIELDS_BAR_VALUE_FORMAT">
-            <Text>City - Yields Bar • Simplified display of income values ([icon:YIELD_FOOD]29.9 -&gt; [icon:YIELD_FOOD]30)</Text>
+            <Text>City - Yields Bar • Simplified display of income values [icon:YIELD_FOOD]29.9 → [icon:YIELD_FOOD]30</Text>
         </Row>
         <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_YIELDS_BAR_VALUE_FORMAT_DESCRIPTION">
             <Text>You can choose to simplify the display of the figures in the income column.
@@ -16,13 +16,13 @@
             </Text>
         </Row>
         <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT">
-            <Text>City - Production Item • Enable Compact Layout Style</Text>
+            <Text>City - Production Item • Enable Compact Layout Style ▄ → ▂</Text>
         </Row>
         <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT_DESCRIPTION">
             <Text>Enabling the compact layout style allows urban production items to display more items on the interface at the same time, increasing the conversion rate of exposure.</Text>
         </Row>
         <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE">
-            <Text>City - Production Item • Display Maintenance [icon:YIELD_GOLD][icon:YIELD_HAPPINESS]</Text>
+            <Text>City - Production Item • Display Maintenance [STYLE:text-negative]-[icon:YIELD_GOLD]-[icon:YIELD_HAPPINESS][/STYLE]</Text>
         </Row>
         <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE_DESCRIPTION">
             <Text>Display "Maintenance Cost Per Round" after "Building Revenue" or "Unit Attributes".</Text>
