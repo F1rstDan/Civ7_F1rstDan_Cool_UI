@@ -51,12 +51,10 @@ export class DanCityYieldsDecorator {
                 // 添加自定义数据
                 this.addCustomYieldData(yields);
             }
-
             for (const yieldData of yields) {
                 this.createOrUpdateYieldEntry(yieldData);
             }
         };
-        
         // 扩展原始createOrUpdateYieldEntry方法
         this.cityYields.createOrUpdateYieldEntry = this.createOrUpdateYieldEntry;
     }
@@ -177,7 +175,9 @@ export class DanCityYieldsDecorator {
     addChildYieldData(parentData, label, value, additionalData = {}) {
         // 转换value为字符串，同时保留数值版本
         const valueStr = String(value);
-        const valueNum = Number(value);
+        // Locale.plainText(string) 此处用于从文本中删除嵌入的字体图标 [icon:YIELD_FOOD]
+        const valueNum = Number(Locale.plainText(valueStr));
+        // if (Number.isNaN(valueNum)) { console.error(`F1rstDan city-yields: addChildYieldData ${label}: [Str]${valueStr} [Num]${valueNum}`); }
 
         // 创建子数据对象
         const childData = {
@@ -478,7 +478,6 @@ export class DanCityYieldsDecorator {
 // 当游戏引擎准备好时初始化
 engine.whenReady.then(() => {
     console.log('F1rstDan\'s Cool UI: Registered City Yields Decorator');
-    
     // 注册装饰器
     Controls.decorate('city-yields', (component) => new DanCityYieldsDecorator(component));
 

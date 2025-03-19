@@ -5,6 +5,8 @@
  * 
  */
 import TooltipManager from '/core/ui/tooltips/tooltip-manager.js';
+// import CityYieldsEngine from '/base-standard/ui/utilities/utilities-city-yields.js';
+import CityDetails from "/base-standard/ui/city-details/model-city-details.js";
 const styleElement = document.createElement('style');
 styleElement.innerHTML = `
     .dan-city-yields-tooltip .tooltip__content {
@@ -74,14 +76,6 @@ class DanCityYieldsTooltipType {
         this.yieldTitle.style.setProperty('text-align', 'center');
         this.yieldTitle.className = 'text-secondary font-title-lg uppercase text-center tracking-100 flex flex-auto justify-center items-center'; 
         this.description.innerHTML = '';
-        // 如果需要移除额外添加的子节点，可以保留这部分逻辑
-        // while (this.container.childElementCount > 2) { // 保留header和description
-        //     this.container.removeChild(this.container.lastChild);
-        // }
-        // 移除所有子节点
-        // while (this.container?.hasChildNodes()) {
-        //     this.container.removeChild(this.container.lastChild);
-        // }
     }
 
     isUpdateNeeded(target) {
@@ -95,6 +89,7 @@ class DanCityYieldsTooltipType {
 
     // 构建tooltip内容
     buildYieldTooltipContent(yieldData) {
+        if (!yieldData) return '';
         //debug
         // console.error("F1rstDan debug yieldData[" + yieldData.label + `] : ${JSON.stringify(yieldData)}`);
 
@@ -146,6 +141,8 @@ class DanCityYieldsTooltipType {
             let expandMore = false; // 展开更多有用信息，代替它的层级。
             if (!expandMore) { expandMore = child.label == Locale.compose("LOC_ATTR_SOURCES"); }                // 如果 "label": "来源",则展开详情（自己消失，代替层级）
             if (!expandMore) { expandMore = child.label == Locale.compose("LOC_ATTR_HAPPINESS_DEDUCTION"); }    // 如果 "label": "快乐值减益",则展开详情（自己消失，代替层级）
+            // 检查是否为"收入"标签，且父级只有这一个子数据。是则展开详情（自己消失，代替层级）
+            if (!expandMore) { expandMore = child.label === Locale.compose("LOC_ATTR_YIELD_INCOME") && childData.length === 1; }
             if (expandMore && child.childData && child.childData.length > 0) {
                 this.tooltipAppendData(tooltipContent, child.childData, indexLevel, {isNegativeChildren: isNegativeChildren});
                 continue;
@@ -275,6 +272,34 @@ class DanCityYieldsTooltipType {
         tooltipContent.appendChild(tableContainer);
     }
 
+    /**
+     * 将CityDetails.yields数据结构转换为CityYieldsEngine数据结构
+     * @param {Object} modelYield - 来自model-city-details.js的产量数据
+     * @returns {Object} - 转换后符合utilities-city-yields.js格式的数据
+     */
+    convertYieldDataFormat(modelYield) {
+        if (!modelYield) return null;
+        // 创建新对象而不是修改原对象
+        const convertedYield = {
+            label: modelYield.name,
+            value: typeof modelYield.value === 'number' ? Locale.toNumber(modelYield.value, '0.0') : modelYield.value,
+            valueNum: modelYield.value,
+            valueType: 1, // 默认值，可能需要根据实际情况调整
+            type: modelYield.icon,
+            showIcon: false,
+            isNegative: typeof modelYield.value === 'number' ? modelYield.value < 0 : false,
+            isModifier: false,
+            childData: []
+        };
+        // 递归处理子数据
+        if (modelYield.children && modelYield.children.length > 0) {
+            convertedYield.childData = modelYield.children
+                .map(child => this.convertYieldDataFormat(child))
+                .filter(child => child !== null); // 过滤掉空的子数据
+        }
+        return convertedYield;
+    }
+
     update() {
         if (!this.target) return;
 
@@ -297,8 +322,26 @@ class DanCityYieldsTooltipType {
         const label = this.target.label || Locale.toUpper(Locale.compose('LOC_LEADER_UNKNOWN_NAME'));
         this.yieldTitle.innerHTML = Locale.stylize(`${value} ${label}`);
         this.yieldTitle.classList.add( yieldTypeTextClassMap[this.target.type], );
-        // TODO 如果子数据为空，则去 城市详细面板借数据显示
-        this.description.innerHTML = this.buildYieldTooltipContent(yieldData);
+
+        // 如果子数据为空 且产量不为0 且不是自定义数据，则去城市详细面板借数据显示
+        if (yieldData.childData.length === 0 && yieldData.valueNum !== 0 && !yieldData.isCustom) {
+            const modelYields = CityDetails.yields;
+            let convertedYields = null;
+            if (modelYields) {
+                for (const yieldItem of modelYields) {
+                    if (yieldItem.icon === this.target.type) {
+                        convertedYields = this.convertYieldDataFormat(yieldItem);
+                        break;
+                    }
+                }
+            }
+            this.description.innerHTML = this.buildYieldTooltipContent(convertedYields);
+            // console.error("F1rstDan yieldData[" + label + `] : ${JSON.stringify(yieldData)}`);
+            // console.error("F1rstDan modelYields[" + label + `] : ${JSON.stringify(convertedYields)}`);
+        } else {
+            // 如果没有意外，构建Tooltip数据内容
+            this.description.innerHTML = this.buildYieldTooltipContent(yieldData);
+        }
 
         //debug
         // console.error("F1rstDan debug yieldTitle.innerHTML:" + this.yieldTitle.innerHTML);
@@ -325,11 +368,6 @@ class DanCityYieldsTooltipType {
         //         }))
         //     })), 
         // }, null, 2));
-
-        // 为tooltip添加样式
-        // const tooltipContent = this.tooltip.querySelector('.tooltip__content');
-        // if (!tooltipContent) return;
-        // tooltipContent.classList.add('dan-city-yields-tooltip');
     }
 
     isBlank() {

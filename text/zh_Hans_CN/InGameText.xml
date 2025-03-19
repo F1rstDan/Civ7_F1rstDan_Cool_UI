@@ -2,7 +2,7 @@
 <Database>
 	<LocalizedText>
         <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_YIELDS_BAR_VALUE_FORMAT" Language="zh_Hans_CN">
-            <Text>城市-收入栏 • 简化收入数值的显示形式 ([icon:YIELD_FOOD]29.9 -&gt; [icon:YIELD_FOOD]30)</Text>
+            <Text>城市-收入栏 • 简化收入数值的显示形式 [icon:YIELD_FOOD]29.9 → [icon:YIELD_FOOD]30</Text>
         </Row>
         <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_YIELDS_BAR_VALUE_FORMAT_DESCRIPTION" Language="zh_Hans_CN">
             <Text>可以选择简化收入栏上数字的显示形式。
@@ -16,13 +16,13 @@
             </Text>
         </Row>
         <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT" Language="zh_Hans_CN">
-            <Text>城市-生产项 • 启用紧凑版布局样式</Text>
+            <Text>城市-生产项 • 启用紧凑版布局样式 ▄ → ▂ </Text>
         </Row>
         <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT_DESCRIPTION" Language="zh_Hans_CN">
             <Text>启用紧凑版布局样式，可使城市生产项在界面上同时展示更多条目，提升展示效率。 </Text>
         </Row>
         <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE" Language="zh_Hans_CN">
-            <Text>城市-生产项 • 显示维护费 [icon:YIELD_GOLD][icon:YIELD_HAPPINESS]</Text>
+            <Text>城市-生产项 • 显示维护费 [STYLE:text-negative]-[icon:YIELD_GOLD]-[icon:YIELD_HAPPINESS][/STYLE]</Text>
         </Row>
         <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE_DESCRIPTION" Language="zh_Hans_CN">
             <Text>将「每回合维护费」显示于「建筑收益」或「单位属性」之后。</Text>
