@@ -1,5 +1,8 @@
 # F1rstDan's Cool UI
 ---------------
+## 版本：1.7.3 (2025-03-20)
+- 增加韩语本地化，非常感谢提供者！ @Hotsolidinfill
+---------------
 ## 版本：1.7.2 (2025-03-20)
 - CityYieldsBar Tooltips 增加数据来源，避免某些情况科技值(或其他)没有数据显示。
 - CityYieldsBar Tooltips 在只有一个“收入”一级数据时，会展开更多数据
@@ -10,8 +13,8 @@
 ---------------
 ## 版本：1.7.0 (2025-03-18)
 - 重构了代码，非侵入式，大大增加兼容性
-  - 目前重构完成了 Producion Item 和 Yields Bar.
-  - 兼容性提升，比如同时安装了 @beezany "bz-city-hall"，现在也能高亮待修理的建筑。
+  - 目前重构完成了 `Producion Item` 和 `Yields Bar`.
+  - 兼容性提升，比如同时安装了 @beezany `bz-city-hall`，现在也能`高亮待修理`的建筑。
   - 下一步重构 quick buy button 的代码。
 - 增加 MOD 设置选项 (感谢 @beezany 的教程)
   - 是否启用 城市-生产项-紧凑版布局样式（如果关闭，显示其他已安装mod的布局样式或显示默认样式）

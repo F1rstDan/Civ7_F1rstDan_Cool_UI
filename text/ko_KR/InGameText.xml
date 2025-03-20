@@ -2,7 +2,7 @@
 <Database>
 	<LocalizedText>
         <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_YIELDS_BAR_VALUE_FORMAT" Language="ko_KR">
-            <Text>정착지 - 소득 패널 • 소득값 간소화 ([icon:YIELD_FOOD]29.9 → [icon:YIELD_FOOD]30)</Text>
+            <Text>정착지 - 소득 패널 • 소득값 간소화 [icon:YIELD_FOOD]29.9 → [icon:YIELD_FOOD]30</Text>
         </Row>
         <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_YIELDS_BAR_VALUE_FORMAT_DESCRIPTION" Language="ko_KR">
             <Text>소득 패널의 수치 표시를 간소화하도록 선택 할 수 있습니다.
