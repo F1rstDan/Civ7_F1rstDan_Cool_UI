@@ -3,7 +3,7 @@
     xmlns="ModInfo">
     <Properties>
         <Name>LOC_MOD_F1RSTDAN_COOL_UI_NAME</Name>
-        <Version>1.7.3</Version>
+        <Version>1.7.4</Version>
         <Description>LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION</Description>
         <Authors>F1rstDan</Authors>
         <URL>https://forums.civfanatics.com/resources/31961/</URL>
@@ -32,6 +32,7 @@
                     <Item>text/en_us/InGameText.xml</Item>
                     <Item>text/zh_Hans_CN/InGameText.xml</Item>
                     <Item>text/ko_KR/InGameText.xml</Item>
+                    <Item>text/ru_RU/InGameText.xml</Item>                    
                 </UpdateText>
             </Actions>
         </ActionGroup>
@@ -52,6 +53,7 @@
                     <Item>text/en_us/InGameText.xml</Item>
                     <Item>text/zh_Hans_CN/InGameText.xml</Item>
                     <Item>text/ko_KR/InGameText.xml</Item>
+                    <Item>text/ru_RU/InGameText.xml</Item>                    
                 </UpdateText>
             </Actions>
         </ActionGroup>
@@ -78,5 +80,6 @@
         <File>text/en_us/ModInfoText.xml</File>
         <File>text/zh_Hans_CN/ModInfoText.xml</File>
         <File>text/ko_KR/ModInfoText.xml</File>
+        <File>text/ru_RU/ModInfoText.xml</File>        
     </LocalizedText>
 </Mod>

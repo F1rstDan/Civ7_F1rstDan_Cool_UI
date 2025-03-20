@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Database>
+    <LocalizedText>
+        <Row Tag="LOC_MOD_F1RSTDAN_COOL_UI_NAME" Language="ru_RU">
+            <Text>F1rstDan's Cool UI</Text>
+        </Row>
+        <Row Tag="LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION" Language="ru_RU">
+            <Text>Улучшенное управление городским производством: подробные доходы при наведении, мгновенные покупки в один клик и отображение в реальном времени распределения населения, затрат на обслуживание и других данных. Оптимизированный интерфейс с интуитивно понятным дизайном для более эффективных решений!</Text>
+        </Row>
+    </LocalizedText>
+</Database>

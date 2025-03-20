@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Database>
+    <LocalizedText>
+        <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_YIELDS_BAR_VALUE_FORMAT" Language="ru_RU">
+            <Text>Экран города - Доход • Округление дохода [icon:YIELD_FOOD]29.9 → [icon:YIELD_FOOD]30</Text>
+        </Row>
+        <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_YIELDS_BAR_VALUE_FORMAT_DESCRIPTION" Language="ru_RU">
+            <Text>Выберите вариант округления значений дохода.
+            [N]Без модификации:
+            [N]&nbsp;&nbsp;[icon:YIELD_FOOD]29.9 [icon:YIELD_PRODUCTION]10.0 
+            [N]Не включено (не отображать .0):
+            [N]&nbsp;&nbsp;[icon:YIELD_FOOD]29.9 [icon:YIELD_PRODUCTION]10 
+            [N]Включено (значения округляются до целых):
+            [N]&nbsp;&nbsp;[icon:YIELD_FOOD]30 [icon:YIELD_PRODUCTION]10 
+            [N][B]Настройка действует только для панели дохода на экране города[/B]
+            </Text>
+        </Row>
+        <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT" Language="ru_RU">
+            <Text>Экран города - Производство • Компактный вид ▄ → ▂</Text>
+        </Row>
+        <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT_DESCRIPTION" Language="ru_RU">
+            <Text>Включить компактный вид списка при выборе производства/покупки в городе</Text>
+        </Row>
+        <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE" Language="ru_RU">
+            <Text>Экран города - Производство • Отображение стоимости обслуживания [STYLE:text-negative]-[icon:YIELD_GOLD]-[icon:YIELD_HAPPINESS][/STYLE]</Text>
+        </Row>
+        <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE_DESCRIPTION" Language="ru_RU">
+            <Text>Отображать стоимость обслуживания после дохода здания или характеристик юнита.</Text>
+        </Row>
+        <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_PRODUCTION_COST" Language="ru_RU">
+            <Text>Экран города - Производство • Отображение стоимости производства [icon:YIELD_PRODUCTION]</Text>
+        </Row>
+        <Row Tag="LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_PRODUCTION_COST_DESCRIPTION" Language="ru_RU">
+            <Text>Отображать стоимость производства перед временем производства и стоимостью покупки.</Text>
+        </Row>
+		<InsertOrIgnore Tag="LOC_OPTIONS_GROUP_F1RSTDAN_MODS" Language="ru_RU">
+			<Text>Моды от F1rstDan</Text>
+		</InsertOrIgnore>
+    </LocalizedText>
+</Database>
