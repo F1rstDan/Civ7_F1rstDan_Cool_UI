@@ -230,6 +230,7 @@ export class DanCityYieldsDecorator {
                     }
                 }
             }
+            const connectedCitiesCount = conectedCityCount + conectedTownCount;
             // 一些共用函数
             const formatCityName = (city) => {
                 // 检查是否为首都
@@ -310,8 +311,8 @@ export class DanCityYieldsDecorator {
                 isCustom: isCustom,
                 type: 'F1DAN_CITY_CONNECTIVITY',
                 label: '[icon:DAN_ICON_CONNECTIVITY] ' + Locale.toUpper(Locale.compose("LOC_PEDIA_CONCEPTS_PAGE_CONNECTED_1_TITLE")),
-                value: "0",  // 初始值，将根据连接城市数量更新
-                valueNum: 0,
+                value: String(connectedCitiesCount),  
+                valueNum: connectedCitiesCount,
                 icon: 'url("fs://game/f1rstdans_cool_ui/textures/F1dan_city_connectivity.png")',
                 showIcon: showIcon,
                 isNegative: isNegative,
@@ -454,10 +455,6 @@ export class DanCityYieldsDecorator {
                     //         });
                     // }
                 }
-
-                // 更新连接总数
-                dataConnectivity.value = String(connectedCities.length);
-                dataConnectivity.valueNum = connectedCities.length;
             }
 
             // 3. 添加贸易路线信息（如果有）
@@ -470,6 +467,7 @@ export class DanCityYieldsDecorator {
 
             // 推送数据到yields数组
             yields.push(dataConnectivity);
+            // console.error("F1rstDan tooltip dataConnectivity",JSON.stringify(dataConnectivity));
             // 【结束】城市连通性数据  ==============================================
         }
     }

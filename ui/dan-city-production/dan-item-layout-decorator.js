@@ -10,12 +10,8 @@
 // 导入可能需要的依赖
 import F1rstDanModOptions from '/f1rstdan-cool-ui/ui/options/f1rstdan-cool-ui-options.js';
 import { ProductionPanelCategory } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
-const categoryTooltipStyleMap = {
-    [ProductionPanelCategory.BUILDINGS]: 'production-constructible-tooltip',
-    [ProductionPanelCategory.UNITS]: 'production-unit-tooltip',
-    [ProductionPanelCategory.WONDERS]: 'production-constructible-tooltip',
-    [ProductionPanelCategory.PROJECTS]: 'production-project-tooltip',
-};
+import './dan-quick-buy-item.js';
+import { UpdateQuickBuyItem } from './dan-quick-buy-item.js';
 const styleElement = document.createElement('style');
 styleElement.innerHTML = `
     .dan-border-radius {
@@ -49,6 +45,7 @@ export class DanProductionItemDecorator {
         this.applyCustomLayout = this.applyCustomLayout.bind(this);
         this.refreshMaintenance = this.refreshMaintenance.bind(this);
         this.refreshProductionCost = this.refreshProductionCost.bind(this);
+        this.UpdateQuickBuyButton = this.UpdateQuickBuyButton.bind(this);
 
         // 扩展原始方法。当属性发生变化时调用
         if (this.item.onAttributeChanged) {
@@ -61,23 +58,6 @@ export class DanProductionItemDecorator {
                 this.handleAttributeChanged(name, oldValue, newValue);
             };
         }
-        // 非侵入式添加属性定义
-        // 获取组件的定义
-        // const componentDefinition = Controls.getDefinition('production-chooser-item');
-        // if (componentDefinition && componentDefinition.attributes) {
-        //     // 检查属性是否已存在
-        //     const hasMaintenanceData = componentDefinition.attributes.some(attr => attr.name === 'data-maintenance-data');
-        //     const hasProductionCost = componentDefinition.attributes.some(attr => attr.name === 'data-production-cost');
-            
-        //     // 如果属性不存在，则添加
-        //     if (!hasMaintenanceData) {
-        //         componentDefinition.attributes.push({ name: 'data-maintenance-data' }); // 维护费
-        //     }
-        //     if (!hasProductionCost) {
-        //         componentDefinition.attributes.push({ name: 'data-production-cost' }); // 生产力花费
-        //     }
-        //     // console.error('F1rstDan componentDefinition.attributes ',JSON.stringify(componentDefinition.attributes));
-        // }
     }
     get hasModOptions() {
         return F1rstDanModOptions!== null && F1rstDanModOptions!== undefined;
@@ -125,6 +105,8 @@ export class DanProductionItemDecorator {
             if (this.isDisplayProductionCost){
                 this.refreshProductionCost();
             }
+            // 初始化快速购买按钮
+            this.UpdateQuickBuyButton();
         } catch (error) {
             console.error('F1rstDan DanProductionItemDecorator afterAttach error:', error);
         }
@@ -170,26 +152,29 @@ export class DanProductionItemDecorator {
         this.toggleVisibility(this.item.agelessContainer, this.item.Root.getAttribute('data-is-ageless') === 'true');
         // 物品名称元素
         this.moveElement(this.item.itemNameElement, this.item.mainInfoTopRow);
-        this.updateClassList(this.item.itemNameElement, 'text-xs mb-1', 'text-sm tracking-100 ml-2 max-w-64');
+        this.updateClassList(this.item.itemNameElement, 'text-xs mb-1', 'text-sm tracking-100 ml-2');
         // 推荐图标容器
-        this.moveElement(this.item.recommendationsContainer, this.item.mainInfoTopRow, 'flex items-center justify-center ml-2 f1dan-size-5');
+        this.moveElement(this.item.recommendationsContainer, this.item.mainInfoTopRow);
+        this.updateClassList(this.item.recommendationsContainer, 'mr-2', 'ml-2 f1dan-size-5');
 
         // 错误文本元素
-        this.moveElement(this.item.errorTextElement, this.item.mainInfoArea, 'font-body text-negative-light z-1 pointer-events-none max-w-64');
+        this.moveElement(this.item.errorTextElement, this.item.mainInfoArea);
 
         // 主要信息详情行
-        this.createCustomElement('mainInfoDetailsRow', 'div', 'flex flex-shrink items-center max-w-64', this.item.mainInfoArea);
+        this.createCustomElement('mainInfoDetailsRow', 'div', 'flex flex-shrink items-center', this.item.mainInfoArea);
         // 次要详情元素
         this.moveElement(this.item.secondaryDetailsElement, this.item.mainInfoDetailsRow);
         this.updateClassList(this.item.secondaryDetailsElement, '', 'font-bold f1dan-size-8-adjust');
         // 维护费元素
-        this.createCustomElement('maintenanceElement', 'span', 'flex text-xs text-negative-light font-bold px-1 hidden ', this.item.secondaryDetailsElement);
+        this.createCustomElement('maintenanceElement', 'span', 'flex text-xs text-negative-light font-bold px-1 hidden', this.item.secondaryDetailsElement);
 
         // 【右侧执行信息区】 （生产力花费/制作成本）
         this.createCustomElement('rightInfoArea', 'div', 'relative flex flex-col items-center justify-center', this.item.container);
         // this.createCustomElement('rightTopRow', 'div', 'flex items-center', this.item.rightInfoArea);   // 右侧顶部行
         // 成本容器
-        this.moveElement(this.item.costContainer, this.item.rightInfoArea, 'flex items-center justify-center font-bold');
+        this.moveElement(this.item.costContainer, this.item.rightInfoArea);
+        this.updateClassList(this.item.costContainer, '', 'justify-center font-bold');
+
         // 生产力花费容器
         this.createCustomElement('productionCostContainer', 'span', 'flex items-center mx-3 production-chooser-tooltip__subtext-bg rounded hidden', this.item.costContainer);
         this.createCustomElement('productionCostAmount', 'span', 'text-xs text-primary-1 leading-tight ml-2 font-title', this.item.productionCostContainer);
@@ -219,17 +204,28 @@ export class DanProductionItemDecorator {
             }
         }
     }
+    // 不止添加按钮，还更新保持布局
+    UpdateQuickBuyButton() {
+        const quickBuyButton = this.createCustomElement('quickBuyButton', 'quick-buy-item', '', this.item.Root);
+        quickBuyButton.style.setProperty("min-width", "4.4rem");
+        quickBuyButton.setAttribute("data-audio-group-ref", "city-actions");
+        quickBuyButton.setAttribute("data-audio-focus", "city-production-focus");
+        quickBuyButton.setAttribute("data-audio-activate-ref", "data-audio-city-production-activate");
+        // 保证按钮在右侧
+        this.item.Root.appendChild(this.item.quickBuyButton);
 
+        // 传递数据给按钮
+        UpdateQuickBuyItem(quickBuyButton, this.item.Root.dataset);
+    }
 
     // 辅助函数
     /**
      * 获取是否为购买模式
      * @returns {boolean} 是否为购买模式
      */
-    // get isPurchase() {
-    //     return this.item.Root.getAttribute('data-is-purchase')  === 'true';
-    // }
-
+    get isPurchase() {
+        return this.item.Root.getAttribute('data-is-purchase')  === 'true';
+    }
     /**
      * 创建自定义元素。确保自定义元素存在，如果不存在则创建。 
      * @param {string} propertyName - 元素属性名称
@@ -243,6 +239,7 @@ export class DanProductionItemDecorator {
             this.item[propertyName].className = className;
         }
         if (parentElement) parentElement.appendChild(this.item[propertyName]);
+        return this.item[propertyName];
     }
     /**
      * 更新元素的类列表
@@ -301,15 +298,12 @@ export class DanProductionItemDecorator {
         }
     }
 
-
     /**
      * 刷新维护费显示
      * 如果维护费元素不存在，则创建到合适的位置
      */
     refreshMaintenance() {
-        // if ( !this.isDisplayMaintenance ){
-        //     return;
-        // }
+        // if (!this.isDisplayMaintenance) return;
         // 如果维护费元素不存在，则创建
         this.createCustomElement('maintenanceElement', 'span', 'flex text-xs text-negative-light font-bold px-1 hidden ', this.item.secondaryDetailsElement);
 
@@ -338,7 +332,6 @@ export class DanProductionItemDecorator {
                     'select YieldType, Amount from Constructible_Maintenances where ConstructibleType = ?', 
                     type
                 );
-                
                 if (maintenances?.length > 0) {
                     const validMaintenances = maintenances.filter(m => m.Amount > 0);
                     if (validMaintenances.length > 0) {
@@ -364,36 +357,30 @@ export class DanProductionItemDecorator {
             try {
                 // 清空现有内容
                 this.item.maintenanceElement.innerHTML = '';
-                
                 // 添加维护费条目
                 maintenanceData.forEach(maintenance => {
                     const maintenanceEntry = document.createElement('div');
                     maintenanceEntry.className = 'flex items-center';
-                    
                     // 创建图标
                     const icon = document.createElement('fxs-icon');
                     icon.setAttribute('data-icon-id', maintenance.YieldType);
                     icon.setAttribute('data-icon-context', 'YIELD');
                     icon.classList.add('size-6');
                     maintenanceEntry.appendChild(icon);
-                    
                     // 创建数值
                     const amount = document.createElement('div');
                     amount.textContent = `-${maintenance.Amount}`;
                     maintenanceEntry.appendChild(amount);
-                    
                     // 添加到维护费容器
                     this.item.maintenanceElement.appendChild(maintenanceEntry);
                 });
-                
                 // 显示维护费容器
                 this.item.maintenanceElement.classList.remove('hidden');
             } catch (error) {
                 // console.error('F1rstDan Error parsing maintenance data:', error);
                 this.item.maintenanceElement.classList.add('hidden');
             }
-        } else {
-            // 没有维护费数据，隐藏容器
+        } else { // 没有维护费数据，隐藏容器
             this.item.maintenanceElement.classList.add('hidden');
         }
     }
@@ -403,9 +390,7 @@ export class DanProductionItemDecorator {
      * 如果生产力花费元素不存在，则创建到合适的位置
      */
     refreshProductionCost() {
-        // if ( !this.isDisplayProductionCost ){
-        //     return;
-        // }
+        // if (!this.isDisplayProductionCost) return;
         // 如果生产力花费容器不存在，则创建
         if (!this.item.productionCostContainer) {
             // 生产力花费容器
@@ -415,54 +400,45 @@ export class DanProductionItemDecorator {
             this.item.productionIcon.setAttribute('data-icon-id', 'YIELD_PRODUCTION');
             this.item.productionIcon.setAttribute('data-icon-context', 'YIELD');
             // 调整位置，让 '生产力花费' 在 '成本' 之前
-            // 让 '生产力花费' 在 'costAmountElement' 之前
             if (this.item.costContainer.firstChild) {
                 this.item.costContainer.insertBefore(this.item.productionCostContainer, this.item.costAmountElement);
             } else {
                 this.item.costContainer.appendChild(this.item.productionCostContainer);
             }
         }
-        
-        // 获取生产力花费
+        // 获取生产力花费，并更新显示
         const element = this.item.Root;
         const type = element.getAttribute('data-type');
         const category = element.getAttribute('data-category');
         const cityID = UI.Player.getHeadSelectedCity();
+        const city = Cities.get(cityID);
         let productionCost;
-        if (cityID && !this.item.isPurchase && category !== ProductionPanelCategory.PROJECTS) {
-            const city = Cities.get(cityID);
-            if (city?.Production && !city.isTown) {  // 确保不是城镇
-                if (category === ProductionPanelCategory.UNITS) {
-                    productionCost = city.Production.getUnitProductionCost(type);
-                } else {
-                    productionCost = city.Production.getConstructibleProductionCost(type, FeatureTypes.NO_FEATURE, ResourceTypes.NO_RESOURCE);
-                }
-                if (productionCost !== undefined && productionCost > 0) {  // 确保有效的生产力花费
-                    // element.dataset.productionCost = productionCost.toString();
-                } else {
-                    element.removeAttribute('data-production-cost');
-                }
+        // 判断是否应该显示生产力花费，非购买模式 && 类别不是项目
+        const shouldShow = !this.item.isPurchase && category !== ProductionPanelCategory.PROJECTS;
+        if (shouldShow) {
+            // 获取生产力花费，单位和建筑获取方式不同
+            if (category === ProductionPanelCategory.UNITS) {
+                productionCost = city.Production?.getUnitProductionCost(type);
+            } else {
+                productionCost = city.Production?.getConstructibleProductionCost(type, FeatureTypes.NO_FEATURE, ResourceTypes.NO_RESOURCE);
             }
-        }
-        // console.error('F1rstDan parsing production cost:', productionCost);
-
-        // 检查数据是否发生变化,如果没有变化则不刷新
-        if ( JSON.stringify(productionCost) == element.getAttribute('data-production-cost') ) {
-            return;
-        }
-        // 更新数据属性
-        element.dataset.productionCost = productionCost.toString();
-
-        if (productionCost && !this.item.isPurchase) {
-            // 显示生产力花费
-            if (this.item.productionCostAmount) {
+            // 更新数据，确保有效的生产力花费
+            if (productionCost !== undefined && productionCost > 0) {
+                // 更新数据属性
+                element.dataset.productionCost = productionCost.toString();
+                // 显示生产力花费
                 this.item.productionCostAmount.textContent = productionCost;
+                this.item.productionCostContainer.classList.remove('hidden');
+            } else {
+                // 隐藏生产力花费
+                this.item.productionCostContainer.classList.add('hidden');
+                element.removeAttribute('data-production-cost');
             }
-            this.item.productionCostContainer.classList.remove('hidden');
         } else {
             // 隐藏生产力花费
             this.item.productionCostContainer.classList.add('hidden');
         }
+        // console.error('F1rstDan parsing production cost:', productionCost);
     }
     
     /**
@@ -480,6 +456,7 @@ export class DanProductionItemDecorator {
                 // 如果成本变动，更新 维护费，生产成本
                 if (this.isDisplayMaintenance) this.refreshMaintenance();
                 if (this.isDisplayProductionCost) this.refreshProductionCost();
+                UpdateQuickBuyItem(this.quickBuyButton, this.item.Root.dataset);
                 break;
             case 'data-maintenance-data':
                 // 维护费数据变化，更新显示

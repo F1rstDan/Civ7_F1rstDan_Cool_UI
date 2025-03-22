@@ -3,7 +3,7 @@
     xmlns="ModInfo">
     <Properties>
         <Name>LOC_MOD_F1RSTDAN_COOL_UI_NAME</Name>
-        <Version>1.7.4</Version>
+        <Version>1.8.0</Version>
         <Description>LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION</Description>
         <Authors>F1rstDan</Authors>
         <URL>https://forums.civfanatics.com/resources/31961/</URL>
@@ -45,9 +45,7 @@
                     <Item>ui/dan-city-production/dan-item-layout-decorator.js</Item>
 				</UIScripts>
                 <ImportFiles>
-                    <Item>ui/production-chooser/panel-production-chooser.js</Item>
-                    <Item>ui/production-chooser/production-chooser-unique-quarter.js</Item>
-                    <Item>ui/production-chooser/dan-quick-buy-item.js</Item>
+                    <Item>ui/dan-city-production/dan-quick-buy-item.js</Item>
                 </ImportFiles>
                 <UpdateText>
                     <Item>text/en_us/InGameText.xml</Item>
