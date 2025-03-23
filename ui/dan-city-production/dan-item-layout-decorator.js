@@ -210,7 +210,7 @@ export class DanProductionItemDecorator {
         quickBuyButton.style.setProperty("min-width", "4.4rem");
         quickBuyButton.setAttribute("data-audio-group-ref", "city-actions");
         quickBuyButton.setAttribute("data-audio-focus", "city-production-focus");
-        quickBuyButton.setAttribute("data-audio-activate-ref", "data-audio-city-production-activate");
+        quickBuyButton.setAttribute("data-audio-activate-ref", "data-audio-city-purchase-activate");    // 激活金币音效
         // 保证按钮在右侧
         this.item.Root.appendChild(this.item.quickBuyButton);
 
@@ -456,7 +456,15 @@ export class DanProductionItemDecorator {
                 // 如果成本变动，更新 维护费，生产成本
                 if (this.isDisplayMaintenance) this.refreshMaintenance();
                 if (this.isDisplayProductionCost) this.refreshProductionCost();
-                UpdateQuickBuyItem(this.quickBuyButton, this.item.Root.dataset);
+                if (this.item.quickBuyButton && this.item.Root.dataset) {
+                    UpdateQuickBuyItem(this.item.quickBuyButton, this.item.Root.dataset);
+                }
+                break;
+            case 'data-error':
+                if (newValue && this.item.quickBuyButton) {
+                    UpdateQuickBuyItem(this.item.quickBuyButton, this.item.Root.dataset);
+                    // console.error('F1rstDan handleAttributeChanged case disabled data-error');
+                }
                 break;
             case 'data-maintenance-data':
                 // 维护费数据变化，更新显示
@@ -496,7 +504,6 @@ export class DanProductionItemDecorator {
                     }
                 }
                 break;
-
         }
     }
 

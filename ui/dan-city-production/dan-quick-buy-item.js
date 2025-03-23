@@ -1,7 +1,7 @@
 import { FxsChooserItem } from '/core/ui/components/fxs-chooser-item.js';
 import { ProductionPanelCategory, Construct } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
 import { InterfaceMode } from '/core/ui/interface-modes/interface-modes.js';
-import { Audio } from '/core/ui/audio-base/audio-support.js';
+import { getItemByCategoryAndType } from './dan-panel-pc-decorator.js';
 
 // 创建快速购买按钮元素
 export const CreateQuickBuyItem = () => {
@@ -63,10 +63,10 @@ function isItemDisabledInPurchaseMode(data) {
         if (result.Requirements?.FullFailure || result.Requirements?.Obsolete) {
             return true;
         }
-        // // 检查是否已经存在或在队列中
-        // if (result.AlreadyExists || result.InQueue) {
-        //     return true;
-        // }
+        // 检查是否已经存在或在队列中
+        if (result.AlreadyExists || result.InQueue) {
+            return true;
+        }
         // // 检查是否有合适的位置
         // if (result.Plots?.length === 0 && !result.ExpandUrbanPlots?.length) {
         //     return true;
@@ -79,8 +79,10 @@ function isItemDisabledInPurchaseMode(data) {
 
 // 更新快速购买按钮的数据
 export const UpdateQuickBuyItem = (element, data) => {
+    // return;
     // 添加空值检查，确保element和data存在
-    // element = this.Root;
+    // 尝试从DOM中查找原始生产项目元素。父元素，JSON.stringify(itemData.dataset)
+    // const itemData = document.querySelector(`production-chooser-item[data-type="${type}"][data-category="${category}"]`);
     if (!element || !data) {
         console.error('F1rstDan UpdateQuickBuyItem: element or data is undefined');
         return;
@@ -91,14 +93,19 @@ export const UpdateQuickBuyItem = (element, data) => {
         return;
     }
     const city = Cities.get(UI.Player.getHeadSelectedCity());
+    // 如果城市是城镇，直接隐藏按钮并退出。减少计算
+    if (city?.isTown) {
+        element.classList.toggle('hidden', true);
+        return;
+    }
     // 设置数据属性
+    // TODO 继承data的所有属性，除了几个例外，比如cost，isPurchase
     element.dataset.name = data.name;
     element.dataset.category = data.category;
     element.dataset.type = data.type;
     element.dataset.isPurchase = 'true';
     element.dataset.isPurchaseMode = data.isPurchase;
     const isPurchaseMode = data.isPurchase === 'true';
-    
 
     // 获取购买成本
     let purchaseCost;
@@ -164,9 +171,8 @@ export const UpdateQuickBuyItem = (element, data) => {
         // 根据城市是否在购买模式，处理显示/隐藏 按钮
         element.classList.toggle('hidden', isPurchaseMode);
         // 检查是否禁用。同时更新禁用状态
-        if ( isItemDisabledInPurchaseMode(element.dataset) ) {
-            element.setAttribute('disabled', 'true');
-        }
+        // TODO isItemDisabledInPurchaseMode 太卡了！
+        element.setAttribute('disabled', isItemDisabledInPurchaseMode(element.dataset));
     }
 };
 
@@ -226,47 +232,19 @@ export class QuickBuyItem extends FxsChooserItem {
         this.updateTooltipContent();
     }
 
-    onButtonActivated(event) {
+    onButtonActivated(event, animationConfirmCallback) {
         const city = Cities.get(UI.Player.getHeadSelectedCity());
         const category = this.Root.dataset.category;
         // const category = event.target.dataset.category;
         const type = this.Root.dataset.type;
 
         if (!InterfaceMode.isInInterfaceMode("INTERFACEMODE_PLACE_BUILDING")) {
-            this.Root.dataset.insufficientFunds = 'false';
-            // 学习`production-chooser-helpers.js`里的逻辑获得interfaceMode值
-            // 根据项目类型设置正确的interfaceMode
-            const typeInfo = GameInfo.Types.lookup(type);
-            if (typeInfo) {
-                // 根据类型设置interfaceMode
-                switch (typeInfo.Kind) {
-                    case 'KIND_CONSTRUCTIBLE':
-                        // 建筑物需要放置
-                        this.Root.dataset.interfaceMode = 'INTERFACEMODE_PLACE_BUILDING';
-                        break;
-                    case 'KIND_UNIT':
-                        // 单位不需要特殊界面模式
-                        this.Root.dataset.interfaceMode = '';
-                        break;
-                    case 'KIND_PROJECT':
-                        // 项目不需要特殊界面模式
-                        this.Root.dataset.interfaceMode = '';
-                        break;
-                    default:
-                        // 默认不需要特殊界面模式
-                        // this.Root.dataset.interfaceMode = 'INTERFACEMODE_PLACE_BUILDING';
-                        break;
-                }
-            }
-
-            const itemData = this.Root.dataset;
-            // 完美解决办法： itemData 获得 panel-production-chooser.js 里的 this.items 查找的数据
-            // const item = this.items[category].find(item => item.type === type);
-            // console.error('F1rstDan onButtonActivated: ', JSON.stringify(itemData));
-
+            const itemData = getItemByCategoryAndType(category, type);
+            // console.error('F1rstDan onButtonActivated: getItems: ', JSON.stringify(itemData) );
             // 强制使用购买模式，购买核心逻辑
             const bSuccess = Construct(city, itemData, true);
             if (bSuccess) {
+                animationConfirmCallback?.();
                 // 如果快速购买的是单位，则关闭界面
                 if (category === ProductionPanelCategory.UNITS) {
                     UI.Player.deselectAllCities();
@@ -274,7 +252,6 @@ export class QuickBuyItem extends FxsChooserItem {
                     this.requestPlaceBuildingClose();
                     // (方案2) 立即刷新所有快速购买按钮
                 }
-                Audio.playSound('data-audio-city-production-purchase-mode', 'city-actions');
             }
         }
     }
