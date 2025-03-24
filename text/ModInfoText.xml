@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Database>
+    <EnglishText>
+        <Row Tag="LOC_MOD_F1RSTDAN_COOL_UI_NAME">
+            <Text>F1rstDan's Cool UI</Text>
+        </Row>
+    </EnglishText>
+    <LocalizedText>
+        <Row Tag="LOC_MOD_F1RSTDAN_COOL_UI_NAME" Language="zh_Hans_CN">
+            <Text>F1rstDan的酷「UI优化」</Text>
+        </Row>
+    </LocalizedText>
+</Database>

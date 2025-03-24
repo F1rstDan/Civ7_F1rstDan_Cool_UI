@@ -215,7 +215,7 @@ export class DanProductionItemDecorator {
         this.item.Root.appendChild(this.item.quickBuyButton);
 
         // 传递数据给按钮
-        UpdateQuickBuyItem(quickBuyButton, this.item.Root.dataset);
+        UpdateQuickBuyItem(quickBuyButton);
     }
 
     // 辅助函数
@@ -457,12 +457,12 @@ export class DanProductionItemDecorator {
                 if (this.isDisplayMaintenance) this.refreshMaintenance();
                 if (this.isDisplayProductionCost) this.refreshProductionCost();
                 if (this.item.quickBuyButton && this.item.Root.dataset) {
-                    UpdateQuickBuyItem(this.item.quickBuyButton, this.item.Root.dataset);
+                    UpdateQuickBuyItem(this.item.quickBuyButton);
                 }
                 break;
             case 'data-error':
                 if (newValue && this.item.quickBuyButton) {
-                    UpdateQuickBuyItem(this.item.quickBuyButton, this.item.Root.dataset);
+                    UpdateQuickBuyItem(this.item.quickBuyButton);
                     // console.error('F1rstDan handleAttributeChanged case disabled data-error');
                 }
                 break;

@@ -3,7 +3,7 @@
     xmlns="ModInfo">
     <Properties>
         <Name>LOC_MOD_F1RSTDAN_COOL_UI_NAME</Name>
-        <Version>1.8.1</Version>
+        <Version>1.8.2</Version>
         <Description>LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION</Description>
         <Authors>F1rstDan</Authors>
         <URL>https://forums.civfanatics.com/resources/31961/</URL>
@@ -21,19 +21,16 @@
     <ActionGroups>
         <ActionGroup id="f1rstdan-menu" scope="shell" criteria="always">
             <Properties>
-                <LoadOrder>1111</LoadOrder>
+                <LoadOrder>11</LoadOrder>
             </Properties>
             <Actions>
+                <UpdateText>
+                    <Item>text/localization.sql</Item>
+                </UpdateText>
                 <UIScripts>
                     <Item>ui/options/f1rstdan-cool-ui-options.js</Item>
                     <Item>ui/options/mod-options-decorator.js</Item>
                 </UIScripts>
-                <UpdateText>
-                    <Item>text/en_us/InGameText.xml</Item>
-                    <Item>text/zh_Hans_CN/InGameText.xml</Item>
-                    <Item>text/ko_KR/InGameText.xml</Item>
-                    <Item>text/ru_RU/InGameText.xml</Item>                    
-                </UpdateText>
             </Actions>
         </ActionGroup>
         <ActionGroup id="f1rstdan-cool-ui-city" scope="game" criteria="always">
@@ -41,6 +38,9 @@
                 <LoadOrder>1111</LoadOrder>
             </Properties>
             <Actions>
+                <UpdateText>
+                    <Item>text/localization.sql</Item>
+                </UpdateText>
                 <UIScripts>
                     <Item>ui/dan-city-production/dan-item-layout-decorator.js</Item>
                     <Item>ui/dan-city-production/dan-panel-pc-decorator.js</Item>
@@ -48,12 +48,6 @@
                 <ImportFiles>
                     <Item>ui/dan-city-production/dan-quick-buy-item.js</Item>
                 </ImportFiles>
-                <UpdateText>
-                    <Item>text/en_us/InGameText.xml</Item>
-                    <Item>text/zh_Hans_CN/InGameText.xml</Item>
-                    <Item>text/ko_KR/InGameText.xml</Item>
-                    <Item>text/ru_RU/InGameText.xml</Item>                    
-                </UpdateText>
             </Actions>
         </ActionGroup>
         <ActionGroup id="f1rstdan-cool-ui-city-yields" scope="game" criteria="always">
@@ -76,9 +70,6 @@
         </ActionGroup>
     </ActionGroups>
     <LocalizedText>
-        <File>text/en_us/ModInfoText.xml</File>
-        <File>text/zh_Hans_CN/ModInfoText.xml</File>
-        <File>text/ko_KR/ModInfoText.xml</File>
-        <File>text/ru_RU/ModInfoText.xml</File>        
+        <File>text/ModInfoText.xml</File>
     </LocalizedText>
 </Mod>

@@ -1,7 +1,7 @@
 import { FxsChooserItem } from '/core/ui/components/fxs-chooser-item.js';
 import { ProductionPanelCategory, Construct } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
 import { InterfaceMode } from '/core/ui/interface-modes/interface-modes.js';
-import { getItemByCategoryAndType } from './dan-panel-pc-decorator.js';
+import { findItemForBuy, findItem } from './dan-panel-pc-decorator.js';
 
 // 创建快速购买按钮元素
 export const CreateQuickBuyItem = () => {
@@ -78,51 +78,74 @@ function isItemDisabledInPurchaseMode(data) {
 
 
 // 更新快速购买按钮的数据
-export const UpdateQuickBuyItem = (element, data) => {
-    // return;
-    // 添加空值检查，确保element和data存在
+export const UpdateQuickBuyItem = (element) => {
     // 尝试从DOM中查找原始生产项目元素。父元素，JSON.stringify(itemData.dataset)
     // const itemData = document.querySelector(`production-chooser-item[data-type="${type}"][data-category="${category}"]`);
-    if (!element || !data) {
-        console.error('F1rstDan UpdateQuickBuyItem: element or data is undefined');
+    if (!element?.parentElement) {
+        console.error('F1rstDan UpdateQuickBuyItem: element.parentElement is undefined');
+        return;
+    } else if (!element.parentElement.dataset?.type) {
+        // 奇怪，勾上“查看隐藏项” 就会弹出很多这个 30+
+        // element.parentElement 打印是 [Object Object] 。无法JSON.stringify(element.parentElement)
+        // element.parentElement.dataset 打印出来是 空白
+        // JSON.stringify(element.parentElement.dataset)打印出来是 “{}”
+        // console.error('F1rstDan UpdateQuickBuyItem: element.parentElement is undefined', element.parentElement);
         return;
     }
-    // 确保element.dataset存在
-    if (!element.dataset) {
-        console.error('F1rstDan UpdateQuickBuyItem: element.dataset is undefined');
-        return;
-    }
+    // 如果是城镇，直接隐藏按钮并退出。减少计算
     const city = Cities.get(UI.Player.getHeadSelectedCity());
-    // 如果城市是城镇，直接隐藏按钮并退出。减少计算
     if (city?.isTown) {
         element.classList.toggle('hidden', true);
         return;
     }
-    // 设置数据属性
-    // TODO 继承data的所有属性，除了几个例外，比如cost，isPurchase
-    element.dataset.name = data.name;
-    element.dataset.category = data.category;
-    element.dataset.type = data.type;
-    element.dataset.isPurchase = 'true';
-    element.dataset.isPurchaseMode = data.isPurchase;
-    const isPurchaseMode = data.isPurchase === 'true';
-
-    // 获取购买成本
-    let purchaseCost;
-    if (data.category === ProductionPanelCategory.UNITS) {
-        purchaseCost = city.Gold?.getUnitPurchaseCost(YieldTypes.YIELD_GOLD, data.type);
+    // 从父元素获取必要的数据
+    // const parentElement = element.parentElement;
+    const parentData = element.parentElement.dataset;
+    const category = parentData.category;
+    const type = parentData.type;
+    
+    // 如果在购买模式下，直接隐藏按钮并退出。减少计算
+    // 如果是奇观或项目，直接排除在外。
+    const isPurchaseMode = parentData.isPurchase === 'true';
+    const isExclude = category === ProductionPanelCategory.WONDERS || 
+                      category === ProductionPanelCategory.PROJECTS ;
+    if (isExclude) {
+        element.classList.toggle('hidden', 'true');
+        return;
     } else {
-        purchaseCost = city.Gold?.getBuildingPurchaseCost(YieldTypes.YIELD_GOLD, data.type);
+        element.classList.toggle('hidden', isPurchaseMode);
     }
-    // 设置成本数据
-    if (purchaseCost !== undefined && purchaseCost > 0) {
-        element.dataset.cost = purchaseCost.toString();
-    } else {
-        element.dataset.cost = '-1';
+
+    // 获取 购买模式下的项目数据 （从 'dan-panel-pc-decorator.js' 拿面板上的数据）
+    // 一旦被禁用，findItemForBuy就不会有数据。（除非玩家开启“查看隐藏项”）
+    let data = findItemForBuy(category, type);
+    let isDisabled = false;
+    if (!data) {
+        data = findItem(category, type);
+        if (!data) {
+            // 都没数据则退出
+            console.error('F1rstDan UpdateQuickBuyItem: findItem is undefined',JSON.stringify(parentData.name));
+            return;
+        }
+        isDisabled = true;
+    }
+    // 如果findItemForBuy没有数据，则必然是禁用状态。否则根据数据判断是否禁用（开启“查看隐藏项”情况下）。
+    if (isDisabled) {
         element.setAttribute('disabled', 'true');
+    } else {
+        element.setAttribute('disabled', (!!data.disabled).toString());
     }
 
-    if (!data.productionCost) {
+    element.dataset.name = data.name;
+    element.dataset.type = data.type;
+    element.dataset.category = data.category;
+    element.dataset.isPurchase = 'true';
+    element.dataset.cost = data.cost.toString();
+    element.dataset.turns = data.turns.toString();
+    if (data.error) element.dataset.error = data.error;
+
+    // 如果 生产项(父元素) 开启了显示生产力成本，直接获取。不然就自己计算
+    if (!parentData.productionCost) {
         // 获取生产力花费，单位和建筑获取方式不同
         let productionCost = -1;
         if (data.category === ProductionPanelCategory.UNITS) {
@@ -131,9 +154,10 @@ export const UpdateQuickBuyItem = (element, data) => {
             productionCost = city.Production?.getConstructibleProductionCost(data.type, FeatureTypes.NO_FEATURE, ResourceTypes.NO_RESOURCE);
         }
         element.dataset.productionCost = productionCost.toString();
-        // console.error('F1rstDan UpdateQuickBuyItem: productionCost is undefined or less than 0',productionCost.toString());
+        // console.error('F1rstDan UpdateQuickBuyItem: parentData.productionCost is undefined',productionCost.toString());
     } else {
-        element.dataset.productionCost = data.productionCost;
+        element.dataset.productionCost = parentData.productionCost;
+        // console.error('F1rstDan UpdateQuickBuyItem: parentData.productionCost YSE',parentData.productionCost);
     }
     
     // 获取基础成本值，计算折扣价
@@ -158,22 +182,7 @@ export const UpdateQuickBuyItem = (element, data) => {
     element.dataset.baseCost = (baseProductionCost * 4).toString(); // 金币成本是产生里基础成本 * 4
     // 计算折扣价
     element.dataset.productionRate = Math.floor((baseProductionCost - element.dataset.productionCost) / baseProductionCost * 100);
-    element.dataset.goldRate = Math.floor((element.dataset.baseCost - purchaseCost) / element.dataset.baseCost * 100);
-
-
-    // 处理显示/隐藏/禁用
-    // 如果是奇观或项目，直接排除在外
-    const isExclude = data.category === ProductionPanelCategory.WONDERS || 
-                      data.category === ProductionPanelCategory.PROJECTS ;
-    if (isExclude) {
-        element.classList.toggle('hidden', isExclude);
-    } else {
-        // 根据城市是否在购买模式，处理显示/隐藏 按钮
-        element.classList.toggle('hidden', isPurchaseMode);
-        // 检查是否禁用。同时更新禁用状态
-        // TODO isItemDisabledInPurchaseMode 太卡了！
-        element.setAttribute('disabled', isItemDisabledInPurchaseMode(element.dataset));
-    }
+    element.dataset.goldRate = Math.floor((element.dataset.baseCost - element.dataset.cost) / element.dataset.baseCost * 100);
 };
 
 // 快速购买按钮组件
@@ -239,8 +248,10 @@ export class QuickBuyItem extends FxsChooserItem {
         const type = this.Root.dataset.type;
 
         if (!InterfaceMode.isInInterfaceMode("INTERFACEMODE_PLACE_BUILDING")) {
-            const itemData = getItemByCategoryAndType(category, type);
-            // console.error('F1rstDan onButtonActivated: getItems: ', JSON.stringify(itemData) );
+            const itemData = findItem(category, type);
+            // console.error('F1rstDan onButtonActivated: findItem: ', JSON.stringify(itemData) );
+            // console.error('F1rstDan onButtonActivated: findItem: ', JSON.stringify(findItem(category, type)) );
+            // console.error('F1rstDan onButtonActivated: findItemForBuy: ', JSON.stringify(findItemForBuy(category, type)) );
             // 强制使用购买模式，购买核心逻辑
             const bSuccess = Construct(city, itemData, true);
             if (bSuccess) {
