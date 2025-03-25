@@ -420,7 +420,9 @@ export class DanProductionItemDecorator {
             if (category === ProductionPanelCategory.UNITS) {
                 productionCost = city.Production?.getUnitProductionCost(type);
             } else {
-                productionCost = city.Production?.getConstructibleProductionCost(type, FeatureTypes.NO_FEATURE, ResourceTypes.NO_RESOURCE);
+                // 快速修复 1.1.1 版本引起的 BUG
+                // productionCost = city.Production?.getConstructibleProductionCost(type, FeatureTypes.NO_FEATURE, ResourceTypes.NO_RESOURCE);
+                productionCost = city.Production?.getConstructibleProductionCost(type, FeatureTypes.NO_FEATURE, false);
             }
             // 更新数据，确保有效的生产力花费
             if (productionCost !== undefined && productionCost > 0) {

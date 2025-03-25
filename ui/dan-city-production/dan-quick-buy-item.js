@@ -12,6 +12,7 @@ export const CreateQuickBuyItem = () => {
 };
 
 // 判断项目在购买模式下是否被禁用（注意传进来的是该按钮的数据）
+// 过时：`Game.CityCommands.canStartQuery` 应该换成 `Game.CityCommands.canStart`
 function isItemDisabledInPurchaseMode(data) {
     const city = Cities.get(UI.Player.getHeadSelectedCity());
     const itemCategory = data.category;
@@ -151,7 +152,9 @@ export const UpdateQuickBuyItem = (element) => {
         if (data.category === ProductionPanelCategory.UNITS) {
             productionCost = city.Production?.getUnitProductionCost(data.type);
         } else {
-            productionCost = city.Production?.getConstructibleProductionCost(data.type, FeatureTypes.NO_FEATURE, ResourceTypes.NO_RESOURCE);
+            // 快速修复 1.1.1 版本引起的 BUG
+            // productionCost = city.Production?.getConstructibleProductionCost(data.type, FeatureTypes.NO_FEATURE, ResourceTypes.NO_RESOURCE);
+            productionCost = city.Production?.getConstructibleProductionCost(data.type, FeatureTypes.NO_FEATURE, false);
         }
         element.dataset.productionCost = productionCost.toString();
         // console.error('F1rstDan UpdateQuickBuyItem: parentData.productionCost is undefined',productionCost.toString());
@@ -455,11 +458,11 @@ export class QuickBuyItem extends FxsChooserItem {
                 this.costAmountElement.textContent = newValue;
                 this.updateTooltipContent(); // 更新提示内容
                 break;
-                case 'data-production-cost':
-                    if (newValue) {
-                        this.updateTooltipContent(); // 更新提示内容
-                    }
-                    break;
+            case 'data-production-cost':
+                if (newValue) {
+                    this.updateTooltipContent(); // 更新提示内容
+                }
+                break;
             default:
                 super.onAttributeChanged(name, _oldValue, newValue);
                 break;

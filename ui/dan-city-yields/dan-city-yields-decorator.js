@@ -244,7 +244,7 @@ export class DanCityYieldsDecorator {
             const dataPopulation = {
                 isCustom: isCustom,
                 type: "F1DAN_CITY_POPULATION",
-                label: '[icon:DAN_ICON_POPULATION] ' + Locale.toUpper(Locale.compose("LOC_UI_CITY_INTERACT_CURENT_POPULATION_HEADER")),
+                label: '[icon:DAN_CITY_POPULATION] ' + Locale.toUpper(Locale.compose("LOC_UI_CITY_INTERACT_CURENT_POPULATION_HEADER")),
                 value: String(cityAllPop),
                 valueNum: Number(cityAllPop),
                 icon: 'url("fs://game/f1rstdan-cool-ui/textures/F1dan_city_population.png")',
@@ -310,7 +310,7 @@ export class DanCityYieldsDecorator {
             const dataConnectivity = {
                 isCustom: isCustom,
                 type: 'F1DAN_CITY_CONNECTIVITY',
-                label: '[icon:DAN_ICON_CONNECTIVITY] ' + Locale.toUpper(Locale.compose("LOC_PEDIA_CONCEPTS_PAGE_CONNECTED_1_TITLE")),
+                label: '[icon:DAN_CITY_CONNECTIVITY] ' + Locale.toUpper(Locale.compose("LOC_PEDIA_CONCEPTS_PAGE_CONNECTED_1_TITLE")),
                 value: String(connectedCitiesCount),  
                 valueNum: connectedCitiesCount,
                 icon: 'url("fs://game/f1rstdans_cool_ui/textures/F1dan_city_connectivity.png")',

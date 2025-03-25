@@ -3,7 +3,7 @@
     xmlns="ModInfo">
     <Properties>
         <Name>LOC_MOD_F1RSTDAN_COOL_UI_NAME</Name>
-        <Version>1.8.2</Version>
+        <Version>1.8.3</Version>
         <Description>LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION</Description>
         <Authors>F1rstDan</Authors>
         <URL>https://forums.civfanatics.com/resources/31961/</URL>
@@ -42,8 +42,9 @@
                     <Item>text/localization.sql</Item>
                 </UpdateText>
                 <UIScripts>
-                    <Item>ui/dan-city-production/dan-item-layout-decorator.js</Item>
                     <Item>ui/dan-city-production/dan-panel-pc-decorator.js</Item>
+                    <Item>ui/dan-city-production/dan-item-layout-decorator.js</Item>
+                    <!-- <Item>ui/dan-city-banners/dan-city-banners-decorator.js</Item> -->
 				</UIScripts>
                 <ImportFiles>
                     <Item>ui/dan-city-production/dan-quick-buy-item.js</Item>

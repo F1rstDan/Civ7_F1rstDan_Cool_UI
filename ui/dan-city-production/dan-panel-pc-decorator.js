@@ -68,7 +68,7 @@ export class DanProductionChooserScreenDecorator {
         // 初始化内部存储属性
         this.component._itemsDataForBuy = null;
         
-        // 扩展原始updateItems方法 - 修复版本
+        // 扩展原始updateItems方法，跟随更新 itemsDataForBuy 的数据
         if (this.component.updateItems) {
             // 保存原始UpdateGate实例
             const originalUpdateItems = this.component.updateItems;
