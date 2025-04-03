@@ -3,7 +3,7 @@
     xmlns="ModInfo">
     <Properties>
         <Name>LOC_MOD_F1RSTDAN_COOL_UI_NAME</Name>
-        <Version>1.8.3</Version>
+        <Version>1.9.0</Version>
         <Description>LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION</Description>
         <Authors>F1rstDan</Authors>
         <URL>https://forums.civfanatics.com/resources/31961/</URL>
@@ -44,7 +44,8 @@
                 <UIScripts>
                     <Item>ui/dan-city-production/dan-panel-pc-decorator.js</Item>
                     <Item>ui/dan-city-production/dan-item-layout-decorator.js</Item>
-                    <!-- <Item>ui/dan-city-banners/dan-city-banners-decorator.js</Item> -->
+                    <Item>ui/dan-city-banners/dan-city-banners-decorator.js</Item>
+                    <Item>ui/dan-city-banners/dan-city-custom-data.js</Item>
 				</UIScripts>
                 <ImportFiles>
                     <Item>ui/dan-city-production/dan-quick-buy-item.js</Item>
@@ -61,8 +62,9 @@
 					<Item>ui/dan-city-yields/dan-city-yields-tooltip.js</Item>
 				</UIScripts>
 				<ImportFiles>
-					<Item>textures/F1dan_city_population.png</Item>
-					<Item>textures/F1dan_city_connectivity.png</Item>
+					<Item>textures/dan_city_population.png</Item>
+					<Item>textures/dan_city_connectivity.png</Item>
+                    <Item>textures/dan_city_connectivity_circle_bg.png</Item>
 				</ImportFiles>
 				<UpdateIcons>
 					<Item>icons/icons.xml</Item>

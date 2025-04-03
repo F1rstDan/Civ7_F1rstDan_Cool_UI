@@ -3,12 +3,12 @@
     <IconDefinitions>
         <Row>
             <ID>DAN_CITY_POPULATION</ID>
-            <Path>fs://game/F1dan_city_population.png</Path>
+            <Path>fs://game/dan_city_population.png</Path>
             <Context>DEFAULT</Context>
         </Row>
         <Row>
             <ID>DAN_CITY_CONNECTIVITY</ID>
-            <Path>fs://game/F1dan_city_connectivity.png</Path>
+            <Path>fs://game/dan_city_connectivity.png</Path>
             <Context>DEFAULT</Context>
         </Row>
         <Row>

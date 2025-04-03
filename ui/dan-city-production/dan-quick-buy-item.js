@@ -2,6 +2,7 @@ import { FxsChooserItem } from '/core/ui/components/fxs-chooser-item.js';
 import { ProductionPanelCategory, Construct } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
 import { InterfaceMode } from '/core/ui/interface-modes/interface-modes.js';
 import { findItemForBuy, findItem } from './dan-panel-pc-decorator.js';
+import { ProductionChooserScreen } from '/base-standard/ui/production-chooser/panel-production-chooser.js';
 
 // 创建快速购买按钮元素
 export const CreateQuickBuyItem = () => {
@@ -116,7 +117,7 @@ export const UpdateQuickBuyItem = (element) => {
     } else {
         element.classList.toggle('hidden', isPurchaseMode);
     }
-
+    // console.error('F1rstDan UpdateQuickBuyItem runing');
     // 获取 购买模式下的项目数据 （从 'dan-panel-pc-decorator.js' 拿面板上的数据）
     // 一旦被禁用，findItemForBuy就不会有数据。（除非玩家开启“查看隐藏项”）
     let data = findItemForBuy(category, type);
@@ -164,25 +165,28 @@ export const UpdateQuickBuyItem = (element) => {
     }
     
     // 获取基础成本值，计算折扣价
-    let baseProductionCost = -1;
-    if (data.category === ProductionPanelCategory.UNITS) {
-        // 对于单位，从Unit_Costs表获取基础成本
-        const unitCosts = GameInfo.Unit_Costs.filter(cost => cost.UnitType === data.type);
-        if (unitCosts.length > 0) {
-            const productionCost = unitCosts.find(cost => cost.YieldType === 'YIELD_PRODUCTION');
-            if (productionCost) {
-                baseProductionCost = productionCost.Cost;
+    // let baseProductionCost = -1;
+    let baseProductionCost = element.dataset.baseProductionCost;
+    if (!baseProductionCost) {
+        if (data.category === ProductionPanelCategory.UNITS) {
+            // 对于单位，从Unit_Costs表获取基础成本
+            const unitCosts = GameInfo.Unit_Costs.filter(cost => cost.UnitType === data.type);
+            if (unitCosts.length > 0) {
+                const productionCost = unitCosts.find(cost => cost.YieldType === 'YIELD_PRODUCTION');
+                if (productionCost) {
+                    baseProductionCost = productionCost.Cost;
+                }
+            }
+        } else {
+            // 对于建筑，直接从Constructibles表获取Cost属性
+            const constructible = GameInfo.Constructibles.lookup(data.type);
+            if (constructible && constructible.Cost > 0) {
+                baseProductionCost = constructible.Cost;
             }
         }
-    } else {
-        // 对于建筑，直接从Constructibles表获取Cost属性
-        const constructible = GameInfo.Constructibles.lookup(data.type);
-        if (constructible && constructible.Cost > 0) {
-            baseProductionCost = constructible.Cost;
-        }
+        element.dataset.baseProductionCost = baseProductionCost.toString();
+        element.dataset.baseCost = (baseProductionCost * 4).toString(); // 金币成本是产生里基础成本 * 4
     }
-    element.dataset.baseProductionCost = baseProductionCost.toString();
-    element.dataset.baseCost = (baseProductionCost * 4).toString(); // 金币成本是产生里基础成本 * 4
     // 计算折扣价
     element.dataset.productionRate = Math.floor((baseProductionCost - element.dataset.productionCost) / baseProductionCost * 100);
     element.dataset.goldRate = Math.floor((element.dataset.baseCost - element.dataset.cost) / element.dataset.baseCost * 100);
@@ -217,15 +221,23 @@ export class QuickBuyItem extends FxsChooserItem {
     }
     
     onAttach() {
+        // 添加快速购买按钮事件监听器
+        this.Root.addEventListener('chooser-item-selected', (event) => { this.onButtonActivated(event); });
         super.onAttach();
     }
     
     onDetach() {
+        // 移除快速购买按钮的点击事件监听器
+        this.Root.removeEventListener('chooser-item-selected', this.onButtonActivated);
         super.onDetach();
     }
     
     render() {
         this.Root.classList.add('quick-buy-item', 'text-xs', 'leading-tight');
+        this.Root.style.setProperty("min-width", "4.4rem");
+        this.Root.setAttribute("data-audio-group-ref", "city-actions");
+        this.Root.setAttribute("data-audio-focus-ref", "data-audio-city-production-focus");
+        this.Root.setAttribute("data-audio-activate-ref", "data-audio-city-purchase-activate");    // 激活金币音效
         this.container.classList.add('p-1', 'font-title', 'flex', 'items-center', 'justify-end');
         // 成本容器
         this.costContainer.className = 'flex items-center font-bold';
@@ -238,8 +250,6 @@ export class QuickBuyItem extends FxsChooserItem {
         this.costIconElement.ariaLabel = Locale.compose("LOC_YIELD_GOLD");
         this.costContainer.appendChild(this.costIconElement);
         this.container.appendChild(this.costContainer);
-        // 添加快速购买按钮事件监听器
-        this.Root.addEventListener('chooser-item-selected', (event) => { this.onButtonActivated(event); });
         // 初始化提示内容
         this.updateTooltipContent();
     }
@@ -253,19 +263,19 @@ export class QuickBuyItem extends FxsChooserItem {
         if (!InterfaceMode.isInInterfaceMode("INTERFACEMODE_PLACE_BUILDING")) {
             const itemData = findItem(category, type);
             // console.error('F1rstDan onButtonActivated: findItem: ', JSON.stringify(itemData) );
-            // console.error('F1rstDan onButtonActivated: findItem: ', JSON.stringify(findItem(category, type)) );
-            // console.error('F1rstDan onButtonActivated: findItemForBuy: ', JSON.stringify(findItemForBuy(category, type)) );
             // 强制使用购买模式，购买核心逻辑
             const bSuccess = Construct(city, itemData, true);
+            // 使用快速购买按钮后，不会自动切到购买模式
+            ProductionChooserScreen.shouldReturnToPurchase = false;
             if (bSuccess) {
                 animationConfirmCallback?.();
-                // 如果快速购买的是单位，则关闭界面
-                if (category === ProductionPanelCategory.UNITS) {
-                    UI.Player.deselectAllCities();
-                    InterfaceMode.switchToDefault();
-                    this.requestPlaceBuildingClose();
-                    // (方案2) 立即刷新所有快速购买按钮
-                }
+                // // 如果快速购买的是单位，则关闭界面
+                // if (category === ProductionPanelCategory.UNITS) {
+                //     UI.Player.deselectAllCities();
+                //     InterfaceMode.switchToDefault();
+                //     this.requestPlaceBuildingClose();
+                //     // (方案2) 立即刷新所有快速购买按钮
+                // }
             }
         }
     }
@@ -449,22 +459,24 @@ export class QuickBuyItem extends FxsChooserItem {
     }
     
     
-    onAttributeChanged(name, _oldValue, newValue) {
+    onAttributeChanged(name, oldValue, newValue) {
         switch (name) {
             case 'data-cost':
                 const cost = newValue ? parseInt(newValue) : 0;
                 const showCost = !isNaN(cost) && cost > 0;
                 this.costContainer.classList.toggle('hidden', !showCost);
                 this.costAmountElement.textContent = newValue;
-                this.updateTooltipContent(); // 更新提示内容
-                break;
-            case 'data-production-cost':
-                if (newValue) {
+                if (newValue != oldValue && newValue != null) {
                     this.updateTooltipContent(); // 更新提示内容
                 }
                 break;
+            // case 'data-production-cost':
+            //     if (newValue) {
+            //         this.updateTooltipContent(); // 更新提示内容
+            //     }
+            //     break;
             default:
-                super.onAttributeChanged(name, _oldValue, newValue);
+                super.onAttributeChanged(name, oldValue, newValue);
                 break;
         }
     }

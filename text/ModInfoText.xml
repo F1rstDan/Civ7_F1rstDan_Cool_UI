@@ -7,7 +7,7 @@
     </EnglishText>
     <LocalizedText>
         <Row Tag="LOC_MOD_F1RSTDAN_COOL_UI_NAME" Language="zh_Hans_CN">
-            <Text>F1rstDan的酷「UI优化」</Text>
+            <Text>F1rstDan的酷极简「UI优化」</Text>
         </Row>
     </LocalizedText>
 </Database>

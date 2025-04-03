@@ -41,11 +41,11 @@ export class DanProductionItemDecorator {
     constructor(component) {
         // 保存原始控件引用
         this.item = component;
-        // 绑定方法到实例
-        this.applyCustomLayout = this.applyCustomLayout.bind(this);
-        this.refreshMaintenance = this.refreshMaintenance.bind(this);
-        this.refreshProductionCost = this.refreshProductionCost.bind(this);
-        this.UpdateQuickBuyButton = this.UpdateQuickBuyButton.bind(this);
+        // // 绑定方法到实例
+        // this.applyCustomLayout = this.applyCustomLayout.bind(this);
+        // this.refreshMaintenance = this.refreshMaintenance.bind(this);
+        // this.refreshProductionCost = this.refreshProductionCost.bind(this);
+        // this.UpdateQuickBuyButton = this.UpdateQuickBuyButton.bind(this);
 
         // 扩展原始方法。当属性发生变化时调用
         if (this.item.onAttributeChanged) {
@@ -207,10 +207,6 @@ export class DanProductionItemDecorator {
     // 不止添加按钮，还更新保持布局
     UpdateQuickBuyButton() {
         const quickBuyButton = this.createCustomElement('quickBuyButton', 'quick-buy-item', '', this.item.Root);
-        quickBuyButton.style.setProperty("min-width", "4.4rem");
-        quickBuyButton.setAttribute("data-audio-group-ref", "city-actions");
-        quickBuyButton.setAttribute("data-audio-focus", "city-production-focus");
-        quickBuyButton.setAttribute("data-audio-activate-ref", "data-audio-city-purchase-activate");    // 激活金币音效
         // 保证按钮在右侧
         this.item.Root.appendChild(this.item.quickBuyButton);
 
@@ -456,32 +452,34 @@ export class DanProductionItemDecorator {
             case 'data-cost':
                 // console.error('F1rstDan handleAttributeChanged case data-cost');
                 // 如果成本变动，更新 维护费，生产成本
-                if (this.isDisplayMaintenance) this.refreshMaintenance();
-                if (this.isDisplayProductionCost) this.refreshProductionCost();
-                if (this.item.quickBuyButton && this.item.Root.dataset) {
-                    UpdateQuickBuyItem(this.item.quickBuyButton);
+                if (newValue != oldValue && newValue != null) {
+                    if (this.isDisplayMaintenance) this.refreshMaintenance();
+                    if (this.isDisplayProductionCost) this.refreshProductionCost();
+                    if (this.item.quickBuyButton && this.item.Root.dataset) {
+                        UpdateQuickBuyItem(this.item.quickBuyButton);
+                    }
                 }
                 break;
-            case 'data-error':
-                if (newValue && this.item.quickBuyButton) {
-                    UpdateQuickBuyItem(this.item.quickBuyButton);
-                    // console.error('F1rstDan handleAttributeChanged case disabled data-error');
-                }
-                break;
-            case 'data-maintenance-data':
-                // 维护费数据变化，更新显示
-                if (this.isDisplayMaintenance) this.refreshMaintenance();
-                break;
+            // case 'data-error':
+            //     if (newValue && this.item.quickBuyButton) {
+            //         UpdateQuickBuyItem(this.item.quickBuyButton);
+            //         // console.error('F1rstDan handleAttributeChanged case disabled data-error');
+            //     }
+            //     break;
+            // case 'data-maintenance-data':
+            //     // 维护费数据变化，更新显示
+            //     if (this.isDisplayMaintenance) this.refreshMaintenance();
+            //     break;
                 
-            case 'data-production-cost':
-                // 生产力花费变化，更新显示
-                if (this.isDisplayProductionCost) this.refreshProductionCost();
-                break;
+            // case 'data-production-cost':
+            //     // 生产力花费变化，更新显示
+            //     if (this.isDisplayProductionCost) this.refreshProductionCost();
+            //     break;
                 
-            case 'data-is-purchase':
-                // 购买模式变化，更新生产力花费显示(购买模式下隐藏)
-                if (this.isDisplayProductionCost) this.refreshProductionCost();
-                break;
+            // case 'data-is-purchase':
+            //     // 购买模式变化，更新生产力花费显示(购买模式下隐藏)
+            //     if (this.isDisplayProductionCost) this.refreshProductionCost();
+            //     break;
                 
             case 'data-is-ageless':
                 // 无时代限制状态变化

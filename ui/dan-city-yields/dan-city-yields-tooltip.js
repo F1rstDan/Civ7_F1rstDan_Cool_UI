@@ -7,10 +7,11 @@
 import TooltipManager from '/core/ui/tooltips/tooltip-manager.js';
 // import CityYieldsEngine from '/base-standard/ui/utilities/utilities-city-yields.js';
 import CityDetails from "/base-standard/ui/city-details/model-city-details.js";
+import { getCityDanData } from '/f1rstdan-cool-ui/ui/dan-city-banners/dan-city-custom-data.js';
 const styleElement = document.createElement('style');
 styleElement.innerHTML = `
     .dan-city-yields-tooltip .tooltip__content {
-        border: 0.1rem solid #82705588;
+        border: 0.1rem solid #82705599;
         border-radius: 1.2rem 0.16rem;
         background-image: linear-gradient(180deg, rgb(7, 8, 8, 0.95) 0%, rgb(19, 21, 31, 0.9) 100%);
         padding-left: 0.6666666667rem;
@@ -25,6 +26,9 @@ styleElement.innerHTML = `
     }
 `;
 document.head.appendChild(styleElement);
+// .text-secondary { color: #E5D2AC; } 
+// #82705588 
+// #9D8869
 const yieldTypeTextClassMap = {
     'YIELD_FOOD': 'text-yield-food',
     'YIELD_PRODUCTION': 'text-yield-production',
@@ -33,8 +37,8 @@ const yieldTypeTextClassMap = {
     'YIELD_CULTURE': 'text-yield-culture',
     'YIELD_HAPPINESS': 'text-yield-happiness',
     'YIELD_DIPLOMACY': 'text-yield-influence',
-    'F1DAN_CITY_POPULATION': 'text-secondary',
-    'F1DAN_CITY_CONNECTIVITY': 'text-secondary',
+    'DAN_CITY_POPULATION': 'text-secondary',
+    'DAN_CITY_CONNECTIVITY': 'text-secondary',
     'YIELD_CITIES': 'text-secondary',
 };
 class DanCityYieldsTooltipType {
@@ -79,12 +83,39 @@ class DanCityYieldsTooltipType {
     }
 
     isUpdateNeeded(target) {
-        // 检查target是否发生变化
-        if (this.target !== target) {
+        // 如果target有yieldData，且this.target和target不同，则需要更新 this.target = target; return true;
+        // 如果target没有yieldData，但 (target.tooltipTarget 的值是空的 或 target.tooltipTarget ！== this.target )。寻找父元素，直到找到'.dan-tooltip'带有yieldData的元素。
+        // 找到后，把 target.tooltipTarget = targetParent; this.target = targetParent; return true;
+        // 如果 targetParent 为空，this.target = null; return false;
+        // 如果target没有yieldData，但 target.tooltipTarget == this.target，则不需要更新 return false;
+
+        if (target && target.yieldData && this.target !== target) {
             this.target = target;
             return true;
         }
+        if (target && !target.yieldData && (!target.tooltipTarget || target.tooltipTarget !== this.target) ) {
+            const targetParent = target.closest('.dan-tooltip');
+            if (targetParent) {
+                // console.error("F1rstDan debug isUpdateNeeded(target) targetParent");
+                target.tooltipTarget = targetParent;
+                this.target = targetParent;
+                return true; 
+            } else {
+                this.target = null;
+                return false;
+            }
+        } 
+        // else if (target && !target.yieldData && target.tooltipTarget == this.target) {
+        //     return false;
+        // }
         return false;
+
+        // // 检查target是否发生变化
+        // if (this.target !== target) {
+        //     this.target = target;
+        //     return true;
+        // }
+        // return false;
     }
 
     // 构建tooltip内容
@@ -100,7 +131,7 @@ class DanCityYieldsTooltipType {
         if (yieldData.childData && yieldData.childData.length > 0) {
             // debug
             //console.error("F1rstDan debug yieldData[" + yieldData.childData.label + `] : ${JSON.stringify(yieldData.childData)}`);
-            this.tooltipAppendData(tooltipDetailContent, yieldData.childData, 1);
+            this.tooltipAppendData(tooltipDetailContent, yieldData.childData, 1, { setMaxIndexLevel:yieldData.setMaxIndexLevel, setLabelColumnWidth:yieldData.setLabelColumnWidth});
         }
         tooltipContent.appendChild(tooltipDetailContent);
         tooltipContent.innerHTML = Locale.stylize(tooltipContent.innerHTML);
@@ -110,7 +141,7 @@ class DanCityYieldsTooltipType {
     }
     // 为tooltip内容 进行递归处理子数据
     tooltipAppendData(tooltipContent, childData, indexLevel, exData = {}) {
-        const maxIndexLevel = 2;   // 设置最大递归层级
+        const maxIndexLevel = exData.setMaxIndexLevel || 2;   // 设置最大递归层级
         
         // 创建表格容器
         const tableContainer = document.createElement("div");
@@ -125,8 +156,9 @@ class DanCityYieldsTooltipType {
         table.style.setProperty("width", "100%");
 
         // 数值列总宽度50%
-        const dataColumnWidth = (50 / maxIndexLevel) + "%";  // 平分50%宽度
-        const labelColumnWidth = "50%";  // 标签列占50%
+        const labelColumnWidthNum = exData.setLabelColumnWidth || 50;
+        const labelColumnWidth = labelColumnWidthNum + "%";  // 标签列占50%
+        const dataColumnWidth = ( (100-labelColumnWidthNum) / maxIndexLevel) + "%";  // 平分50%宽度
         
         for (const child of childData) {
             if (child.valueType >= 5) continue; // 如果 child.valueType 大于等于 5，则跳过当前循环
@@ -189,6 +221,9 @@ class DanCityYieldsTooltipType {
                 if(child.isModifier && indexLevel === 1) {
                     cell.style.setProperty("border-top", "0.06rem solid #877b6544");
                 }
+                if(child.isNoTopBorder){
+                    cell.style.removeProperty("border-top");
+                }
 
                 let isNegative = child.isNegative;
                 // 如果在"减去扣除"下级，数值正负翻转
@@ -221,7 +256,8 @@ class DanCityYieldsTooltipType {
                     cell.innerHTML = Locale.stylize(displayLabel);
                 }
                 else if(i === indexLevel - 1) {  // 数值列
-                    cell.classList.add('justify-end');  // 数值列右对齐
+                    // cell.classList.add('justify-end');  // 数值列右对齐
+                    cell.style.setProperty('justify-content', 'flex-end');  // 数值列右对齐
                     // cell.style.setProperty("white-space", "nowrap");    // 添加文字不换行的样式
                     cell.style.setProperty("padding-right", "0.4rem");
                     cell.style.setProperty("padding-left", "0rem");
@@ -253,7 +289,20 @@ class DanCityYieldsTooltipType {
                 else {  // 空单元格
                     cell.innerHTML = Locale.stylize("&nbsp;");
                 }
-                
+                // 是否独占一整排。如果是，数值不添加到行中。标签列满宽度
+                if(child.isFullRow && i === maxIndexLevel) {
+                    cell.style.setProperty("width", "100%");
+                    cell.style.setProperty("max-width", "24rem");           // 最大宽度21.33rem，待定 TODO
+                    cell.style.setProperty("text-align", "center");         // 文字排列方式，居中对齐
+                    cell.style.setProperty('justify-content', 'center');    // 居中对齐
+                    cell.style.setProperty("border", "0.06rem solid #877b6544");
+                    // 增加文字换行属性
+                    // cell.style.setProperty("white-space", "normal");
+                    // cell.style.setProperty("word-break", "break-word");
+                } else if(child.isFullRow){
+                    continue;
+                }
+
                 row.appendChild(cell);
             }
 
@@ -306,25 +355,80 @@ class DanCityYieldsTooltipType {
         this.reset();
 
         // 获取yieldData数据
-        const yieldData = this.target.yieldData;
-        if (!yieldData) return;
+        const type = this.target.type;
+        let targetData = this.target.yieldData;
+        if (this.target.isBanner){
+            targetData = getCityDanData(type, this.target.city);
+        }
+
+        // if (!yieldData) return;
+        
+        // // 处理yieldData是数组的情况
+        // let targetData;
+        // if (Array.isArray(yieldData)) {
+        //     // 如果是数组，查找与target.type匹配的项
+        //     targetData = yieldData.find(item => item.type === this.target.type);
+        //     if (!targetData && yieldData.length > 0) {
+        //         // 如果没找到匹配项，使用第一个
+        //         targetData = yieldData[0];
+        //     }
+        // } else {
+        //     // 如果不是数组，直接使用
+        //     targetData = yieldData;
+        // }
+        
+        // 如果没有找到有效的Data，退出
+        if (!targetData) return;
+        
+        // 打印目标数据和类名
+        // console.error(`F1rstDan yieldData type[${type}]: ${JSON.stringify(targetData)}, target className: ${this.target.className}`);
+        // console.error(`F1rstDan cityID 【${ JSON.stringify(UI.Player.getHeadSelectedCity()) }】`);
+
 
         // 设置标题和内容
         let value;
         if (this.target.value) {
-            if (yieldData.valueType == -1) {
+            if (targetData.valueType == -1) {
                 value = this.target.value;
             } else {
-                value = !yieldData.isNegative ? `+${this.target.value}` : this.target.value;
+                value = !targetData.isNegative ? `+${this.target.value}` : this.target.value;
             }
         }
         // 确保label存在
         const label = this.target.label || Locale.toUpper(Locale.compose('LOC_LEADER_UNKNOWN_NAME'));
-        this.yieldTitle.innerHTML = Locale.stylize(`${value} ${label}`);
-        this.yieldTitle.classList.add( yieldTypeTextClassMap[this.target.type], );
+        if (targetData.isCustom) {
+            const CircleContainer = document.createElement("div");
+            CircleContainer.className = 'flex justify-center items-center w-full'; 
+            CircleContainer.style.position = "absolute";
+            CircleContainer.style.top = "-250%";
+            CircleContainer.style.setProperty('padding-left', '1.44rem');
+            this.yieldTitle.appendChild(CircleContainer);
+            const valueCircle = document.createElement("div");
+            valueCircle.className = 'text-secondary font-title-lg uppercase text-center tracking-100 flex justify-center items-center'; 
+            valueCircle.style.setProperty('font-size', '1.5rem');
+            valueCircle.style.setProperty('padding-left', '0.1rem');
+            valueCircle.style.setProperty('padding-bottom', '0.2rem');
+            // valueCircle.style.backgroundImage = 'url("hud_sub_circle_bk")';
+            valueCircle.style.backgroundImage = 'url("hud_tech_circle_dis")';
+            // valueCircle.style.backgroundImage = 'url("fs://game/f1rstdans_cool_ui/textures/dan_city_connectivity_circle_bg.png")';
+            valueCircle.style.setProperty('background-size', 'contain');
+            valueCircle.style.width = "5.5rem";
+            valueCircle.style.height = "5.5rem"
+            valueCircle.innerHTML = value;
+            CircleContainer.appendChild(valueCircle)
+
+            const TitleLabel = document.createElement("div");
+            TitleLabel.className = 'text-secondary font-title-lg uppercase text-center tracking-100 flex flex-auto justify-center items-center z-1'; 
+            TitleLabel.innerHTML = Locale.stylize(label);
+            this.yieldTitle.appendChild(TitleLabel);
+        } else {
+            this.yieldTitle.innerHTML = Locale.stylize(`${value} ${label}`);
+            this.yieldTitle.classList.add( yieldTypeTextClassMap[this.target.type], );
+        }
+        
 
         // 如果子数据为空 且产量不为0 且不是自定义数据，则去城市详细面板借数据显示
-        if (yieldData.childData.length === 0 && yieldData.valueNum !== 0 && !yieldData.isCustom) {
+        if (targetData.childData.length === 0 && targetData.valueNum !== 0 && !targetData.isCustom) {
             const modelYields = CityDetails.yields;
             let convertedYields = null;
             if (modelYields) {
@@ -336,17 +440,17 @@ class DanCityYieldsTooltipType {
                 }
             }
             this.description.innerHTML = this.buildYieldTooltipContent(convertedYields);
-            // console.error("F1rstDan yieldData[" + label + `] : ${JSON.stringify(yieldData)}`);
+            // console.error("F1rstDan targetData[" + label + `] : ${JSON.stringify(targetData)}`);
             // console.error("F1rstDan modelYields[" + label + `] : ${JSON.stringify(convertedYields)}`);
         } else {
             // 如果没有意外，构建Tooltip数据内容
-            this.description.innerHTML = this.buildYieldTooltipContent(yieldData);
+            this.description.innerHTML = this.buildYieldTooltipContent(targetData);
         }
 
         //debug
         // console.error("F1rstDan debug yieldTitle.innerHTML:" + this.yieldTitle.innerHTML);
         // console.error("F1rstDan debug description.innerHTML:" + this.description.innerHTML);
-        // console.error("F1rstDan debug yieldData[" + label + `] : ${JSON.stringify(yieldData)}`);
+        // console.error("F1rstDan debug targetData[" + label + `] : ${JSON.stringify(targetData)}`);
 
         // 打印完整的DOM结构
         // 使用JSON.stringify()来格式化输出对象结构

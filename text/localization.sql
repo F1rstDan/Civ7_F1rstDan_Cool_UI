@@ -15,17 +15,17 @@
 --========================================================================================================================
 INSERT OR REPLACE INTO LocalizedText (Tag, Language, Text) VALUES 
 -- 模组描述 --
-('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'zh_Hans_CN', '「城市生产管理全面升级，悬停预览资源详情、一键快捷购买，展示人口及维护费用等关键数据，操作高效直观，助力决策更精准！」'),
-('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'zh_Hant_HK', '「城市生產管理全面升級，懸停預覽資源詳情、一鍵快捷購買，展示人口及維護費用等關鍵數據，操作高效直觀，助力決策更精準！」'),
-('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'en_US', 'City Production Management Upgraded: Hover-preview resource details, instant one-click purchases, and real-time displays of population distribution, maintenance costs, and critical data. Streamlined operations with intuitive design for smarter decision-making!'),
-('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'fr_FR', 'Gestion de la production urbaine améliorée : aperçu des détails des ressources au survol, achats instantanés en un clic et affichages en temps réel de la répartition de la population, des coûts d''entretien et des données critiques. Opérations rationalisées avec une conception intuitive pour une prise de décision plus intelligente !'),
-('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'de_DE', 'Verbesserte Verwaltung der Stadtproduktion: Ressourcendetails beim Überfahren mit der Maus, sofortige Einkäufe mit einem Klick und Echtzeitanzeigen der Bevölkerungsverteilung, Wartungskosten und kritischer Daten. Optimierte Abläufe mit intuitivem Design für intelligentere Entscheidungsfindung!'),
-('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'it_IT', 'Gestione della produzione urbana migliorata: anteprima dei dettagli delle risorse al passaggio del mouse, acquisti istantanei con un clic e visualizzazioni in tempo reale della distribuzione della popolazione, dei costi di manutenzione e dei dati critici. Operazioni semplificate con design intuitivo per un processo decisionale più intelligente!'),
-('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'ja_JP', '都市生産管理のアップグレード：ホバープレビューでリソースの詳細を確認、ワンクリックで即時購入、人口分布やメンテナンスコストなどの重要データをリアルタイム表示。直感的なデザインでスマートな意思決定をサポートする合理化された操作！'),
-('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'ru_RU', 'Улучшенное управление городским производством: подробные доходы при наведении, мгновенные покупки в один клик и отображение в реальном времени распределения населения, затрат на обслуживание и других данных. Оптимизированный интерфейс с интуитивно понятным дизайном для более эффективных решений!'),
-('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'pt_BR', 'Gerenciamento de produção urbana aprimorado: visualização prévia de detalhes de recursos ao passar o mouse, compras instantâneas com um clique e exibições em tempo real da distribuição da população, custos de manutenção e dados críticos. Operações simplificadas com design intuitivo para tomada de decisões mais inteligente!'),
-('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'pl_PL', 'Ulepszone zarządzanie produkcją miejską: podgląd szczegółów zasobów po najechaniu kursorem, błyskawiczne zakupy jednym kliknięciem oraz wyświetlanie w czasie rzeczywistym rozkładu populacji, kosztów utrzymania i kluczowych danych. Usprawnione operacje z intuicyjnym designem dla inteligentniejszego podejmowania decyzji!'),
-('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'ko_KR', '정착지 생산 관리 업그레이드: 생산량 세부 정보 마우스 오버 미리보기, 즉각적인 원클릭 구매, 인구 분포, 유지 관리 비용 및 중요 데이터의 실시간 표시. 더 스마트한 의사 결정을 위한 직관적인 디자인으로 간소화된 운영!'),
+('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'zh_Hans_CN', '「高效・直观・美观 —— 一键速购 + 城市数据预览 + 极简 UI 设计，一目了然助力精准决策」'),
+('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'zh_Hant_HK', '「高效・直觀・美觀 —— 一鍵速購 + 城市數據預覽 + 極簡 UI 設計，一目了然助力精準決策」'),
+('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'en_US', 'Efficient · Intuitive · Aesthetic — One-Click Purchase + City Data Preview + Minimalist UI Design, At-a-Glance for Precise Decisions'),
+('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'fr_FR', 'Efficace · Intuitif · Esthétique — Achat en un clic + Aperçu des données urbaines + Design UI minimaliste, Vue d''ensemble pour des décisions précises'),
+('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'de_DE', 'Effizient · Intuitiv · Ästhetisch — Ein-Klick-Kauf + Stadtdatenvorschau + Minimalistisches UI-Design, Überblick für präzise Entscheidungen'),
+('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'it_IT', 'Efficiente · Intuitivo · Estetico — Acquisto con un clic + Anteprima dati città + Design UI minimalista, Visione d''insieme per decisioni precise'),
+('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'ja_JP', '効率的・直感的・美的 —— ワンクリック購入 + 都市データプレビュー + ミニマルUIデザイン、一目で正確な意思決定をサポート'),
+('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'ru_RU', 'Эффективный · Интуитивный · Эстетичный — Покупка в один клик + Предпросмотр данных города + Минималистичный дизайн UI, Мгновенный обзор для точных решений'),
+('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'pt_BR', 'Eficiente · Intuitivo · Estético — Compra com um clique + Visualização de dados da cidade + Design UI minimalista, Visão geral para decisões precisas'),
+('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'pl_PL', 'Wydajny · Intuicyjny · Estetyczny — Zakup jednym kliknięciem + Podgląd danych miasta + Minimalistyczny design UI, Przejrzystość dla precyzyjnych decyzji'),
+('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'ko_KR', '효율적 · 직관적 · 미적 —— 원클릭 구매 + 도시 데이터 미리보기 + 미니멀 UI 디자인, 한눈에 정확한 의사결정 지원'),
 
 -- 模组选项组 --
 ('LOC_OPTIONS_GROUP_F1RSTDAN_MODS', 'zh_Hans_CN', '「F1rstDan」的模组配置'),
