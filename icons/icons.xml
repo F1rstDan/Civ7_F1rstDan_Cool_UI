@@ -16,6 +16,11 @@
             <Path>fs://game/hud_turn-timer.png</Path>
             <Context>DEFAULT</Context>
         </Row>
+        <Row>
+            <ID>DAN_ICON_CITY_CONNECTION_BG</ID>
+            <Path>fs://game/dan_city_connectivity_circle_bg.png</Path>
+            <Context>DEFAULT</Context>
+        </Row>
     </IconDefinitions>
     <IconAliases>
     </IconAliases>

@@ -1,4 +1,5 @@
 import { updateCustomDataToCityBanner } from '/f1rstdan-cool-ui/ui/dan-city-banners/dan-city-custom-data.js';
+import { getUserModOptions } from '/f1rstdan-cool-ui/ui/options/f1rstdan-cool-ui-options.js';
 const styleElement = document.createElement('style');
 styleElement.innerHTML = `
 .dan-default-tooltip-hide .tooltip{
@@ -9,13 +10,21 @@ styleElement.innerHTML = `
 document.head.appendChild(styleElement);
 
 export class DanCityBannersDecorator {
+    get isDisplayConnectionInfo() {
+        try {
+            return getUserModOptions().cityBannerDisplayConnectionInfo;
+        } catch (error) {
+            console.error('F1rstDan ModOptions get isDisplayConnectionInfo error:', error);
+            return true;    // 如果MOD配置异常，默认启动
+        }
+    }
 
     constructor(component) {
         this.component = component;
         // 给人口添加事件监听器
         this.observerPopulation = new MutationObserver(this.updatePopulationData.bind(this));
         
-        // 添加防抖功能
+        // 添加防抖功能，更新城市连接数据
         this.updateConnectivityData = this.debounce(this.updateConnectivityData.bind(this), 300);
         // this.updateConnectivityData = this.updateConnectivityData.bind(this);
     }
@@ -52,7 +61,9 @@ export class DanCityBannersDecorator {
     afterAttach() {
         try {
             // 应用城市连通性布局和样式
-            this.applyConnectivityLayout();
+            if (this.isDisplayConnectionInfo) {
+                this.applyConnectivityLayout();
+            }
             // 应用人口的 Tooltip
             this.applyPopulationTooltip();
 
@@ -143,6 +154,8 @@ export class DanCityBannersDecorator {
     // 更新数据，然后更新显示
     // 如果MOD配置 选择隐藏城市横幅上的 城市连接性 ，则隐藏
     updateConnectivityData() {
+        if (!this.isDisplayConnectionInfo) return;
+
         const city = this.component.city;
         const elements = this.component.elements;
         const connectivityCircle = this.component.connectivityCircle;

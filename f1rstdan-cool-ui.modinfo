@@ -3,7 +3,7 @@
     xmlns="ModInfo">
     <Properties>
         <Name>LOC_MOD_F1RSTDAN_COOL_UI_NAME</Name>
-        <Version>1.9.0</Version>
+        <Version>1.9.1</Version>
         <Description>LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION</Description>
         <Authors>F1rstDan</Authors>
         <URL>https://forums.civfanatics.com/resources/31961/</URL>
@@ -29,8 +29,13 @@
                 </UpdateText>
                 <UIScripts>
                     <Item>ui/options/f1rstdan-cool-ui-options.js</Item>
-                    <Item>ui/options/mod-options-decorator.js</Item>
                 </UIScripts>
+				<ImportFiles>
+                    <Item>textures/dan_city_connectivity_circle_bg.png</Item>
+				</ImportFiles>
+				<UpdateIcons>
+					<Item>icons/icons.xml</Item>
+				</UpdateIcons>
             </Actions>
         </ActionGroup>
         <ActionGroup id="f1rstdan-cool-ui-city" scope="game" criteria="always">

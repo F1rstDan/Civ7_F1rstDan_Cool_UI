@@ -7,7 +7,7 @@
  */
 
 // 导入必要的依赖
-import F1rstDanModOptions from '/f1rstdan-cool-ui/ui/options/f1rstdan-cool-ui-options.js';
+import { getUserModOptions } from '/f1rstdan-cool-ui/ui/options/f1rstdan-cool-ui-options.js';
 import CityYieldsEngine from '/base-standard/ui/utilities/utilities-city-yields.js';
 import { ComponentID } from '/core/ui/utilities/utilities-component-id.js';
 import { addCustomDataToYields } from '/f1rstdan-cool-ui/ui/dan-city-banners/dan-city-custom-data.js';
@@ -69,12 +69,14 @@ export class DanCityYieldsDecorator {
         // 扩展原始createOrUpdateYieldEntry方法
         this.cityYields.createOrUpdateYieldEntry = this.createOrUpdateYieldEntry;
     }
-    get hasModOptions() {
-        return F1rstDanModOptions!== null && F1rstDanModOptions!== undefined;
-    }
+
     get isYieldsBarValueFormat() {
-        if (!this.hasModOptions) return true;   // 如果MOD配置为空，默认启动
-        return F1rstDanModOptions.cityYieldsBarValueFormat;
+        try {
+            return getUserModOptions().cityYieldsBarValueFormat;
+        } catch (error) {
+            console.error('F1rstDan ModOptions get isYieldsBarValueFormat error:', error);
+            return false;    // 如果MOD配置异常，默认关闭
+        }
     }
     
     /**

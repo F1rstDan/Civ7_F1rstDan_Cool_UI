@@ -8,7 +8,7 @@
  */
 
 // 导入可能需要的依赖
-import F1rstDanModOptions from '/f1rstdan-cool-ui/ui/options/f1rstdan-cool-ui-options.js';
+import { getUserModOptions } from '/f1rstdan-cool-ui/ui/options/f1rstdan-cool-ui-options.js';
 import { ProductionPanelCategory } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
 import './dan-quick-buy-item.js';
 import { UpdateQuickBuyItem } from './dan-quick-buy-item.js';
@@ -59,20 +59,30 @@ export class DanProductionItemDecorator {
             };
         }
     }
-    get hasModOptions() {
-        return F1rstDanModOptions!== null && F1rstDanModOptions!== undefined;
-    }
+
     get isApplyLayout() {
-        if (!this.hasModOptions) return true;   // 如果MOD配置为空，默认启动
-        return F1rstDanModOptions.pItemApplyLayout;
+        try {
+            return getUserModOptions().pItemApplyLayout;
+        } catch (error) {
+            console.error('F1rstDan ModOptions get isApplyLayout error:', error);
+            return true;    // 如果MOD配置异常，默认启动
+        }
     }
     get isDisplayMaintenance() {
-        if (!this.hasModOptions) return true;   // 如果MOD配置为空，默认启动
-        return F1rstDanModOptions.pItemDisplayMaintenance;
+        try {
+            return getUserModOptions().pItemDisplayMaintenance;
+        } catch (error) {
+            console.error('F1rstDan ModOptions get isDisplayMaintenance error:', error);
+            return true;    // 如果MOD配置异常，默认启动
+        }
     }
     get isDisplayProductionCost() {
-        if (!this.hasModOptions) return true;   // 如果MOD配置为空，默认启动
-        return F1rstDanModOptions.pItemDisplayProductionCost;
+        try {
+            return getUserModOptions().pItemDisplayProductionCost;
+        } catch (error) {
+            console.error('F1rstDan ModOptions get isDisplayProductionCost error:', error);
+            return true;    // 如果MOD配置异常，默认启动
+        }
     }
     
     /**

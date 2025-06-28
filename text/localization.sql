@@ -217,6 +217,33 @@ INSERT OR REPLACE INTO LocalizedText (Tag, Language, Text) VALUES
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_PRODUCTION_COST_DESCRIPTION', 'pl_PL', 'Wyświetl "Wymagany koszt produktywności" przed "Wymagana runda produkcji" lub "Wymagane pieniądze na produkcję".'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_PRODUCTION_COST_DESCRIPTION', 'ko_KR', '"필요 턴 수" 또는 "필요 자본" 앞에 "필요 생산성 비용"을 표시합니다. '),
 
+-- 城市横幅显示连接信息选项 --
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO', 'zh_Hans_CN', '城市横幅 • 显示城市连接信息[icon:DAN_ICON_CITY_CONNECTION_BG]'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO', 'zh_Hant_HK', '城市橫幅 • 顯示城市連接資訊[icon:DAN_ICON_CITY_CONNECTION_BG]'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO', 'en_US', 'City Banner • Display City Connection Info[icon:DAN_ICON_CITY_CONNECTION_BG]'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO', 'fr_FR', 'Bannière de la ville • Afficher les informations de connexion de la ville[icon:DAN_ICON_CITY_CONNECTION_BG]'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO', 'de_DE', 'Stadt-Banner • Anzeigen der Stadtverbindungsinformationen[icon:DAN_ICON_CITY_CONNECTION_BG]'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO', 'it_IT', 'Banniere della città • Visualizza le informazioni di connessione della città[icon:DAN_ICON_CITY_CONNECTION_BG]'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO', 'ja_JP', '都市バナー - 都市接続情報を表示[icon:DAN_ICON_CITY_CONNECTION_BG]'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO', 'ru_RU', 'Баннер города - Информация о соединении с городом[icon:DAN_ICON_CITY_CONNECTION_BG]'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO', 'pt_BR', 'Banner da cidade - Mostrar informações de conexão da cidade[icon:DAN_ICON_CITY_CONNECTION_BG]'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO', 'pl_PL', 'Banner miasta - Wyświetlanie informacji o połączeniu z miastem[icon:DAN_ICON_CITY_CONNECTION_BG]'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO', 'ko_KR', '도시 배너 - 도시 연결 정보 표시[icon:DAN_ICON_CITY_CONNECTION_BG]'),
+
+-- 城市横幅显示连接信息选项描述 --
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO_DESCRIPTION', 'zh_Hans_CN', '将「城市连接信息」显示于城市横幅中。'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO_DESCRIPTION', 'zh_Hant_HK', '將「城市連接資訊」顯示於城市橫幅中。'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO_DESCRIPTION', 'en_US', 'Display "City Connection Info" in the City Banner.'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO_DESCRIPTION', 'fr_FR', 'Afficher "Informations de connexion de la ville" dans la bannière de la ville.'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO_DESCRIPTION', 'de_DE', 'Zeigt "Informationen über die Stadtverbindung" im Stadtbanner an.'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO_DESCRIPTION', 'it_IT', 'Visualizza "Informazioni di connessione della città" nella banniere della città.'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO_DESCRIPTION', 'ja_JP', '都市バナーに「都市接続情報」を表示します。'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO_DESCRIPTION', 'ru_RU', 'Показать "Информация о соединении с городом" в баннере города.'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO_DESCRIPTION', 'pt_BR', 'Exibe "Informações de conexão da cidade" na bannière da cidade.'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO_DESCRIPTION', 'pl_PL', 'Wyświetla "Informacje o połączeniu z miastem" w banerze miasta.'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO_DESCRIPTION', 'ko_KR', '도시 배너에 "도시 연결 정보"를 표시합니다.'),
+
+
 -- 文档最后的分号 --
 ('LOC_F1RSTDAN_MODS_SEMICOLON', 'zh_Hans_CN', '文档最后的分号，不需要翻译；Semicolon, no translation required.');
 --========================================================================================================================
