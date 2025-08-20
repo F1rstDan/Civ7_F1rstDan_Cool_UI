@@ -8,8 +8,9 @@
  */
 
 // 导入可能需要的依赖
+// import { ProductionPanelCategory } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
+import { P as ProductionPanelCategory} from '/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js';
 import { getUserModOptions } from '/f1rstdan-cool-ui/ui/options/f1rstdan-cool-ui-options.js';
-import { ProductionPanelCategory } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
 import './dan-quick-buy-item.js';
 import { UpdateQuickBuyItem } from './dan-quick-buy-item.js';
 const styleElement = document.createElement('style');

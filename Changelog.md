@@ -1,5 +1,9 @@
 # F1rstDan's Cool UI
 ---------------
+## 版本：1.9.2 (2025-08-20)
+- 已更新以兼容1.2.4补丁
+- Updated to be compatible with patch 1.2.4
+---------------
 ## 版本：1.9.1 (2025-06-28)
 - 上传到文明7的创意工坊。(https://steamcommunity.com/sharedfiles/filedetails/?id=3510572267)
 - 在设置中新增 `城市横幅中是否显示城市连接信息` 选项，默认开启。

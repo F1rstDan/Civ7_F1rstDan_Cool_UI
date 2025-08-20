@@ -58,9 +58,11 @@ export const getUserModOptions = () => getSettings(modSettingsKey);
 // ============================================================================
 // 这些导入引入了与文明7的游戏选项系统交互所需的必要模块。
 // 除非您知道自己在做什么，否则不要修改这些。
-import { Options, OptionType } from '/core/ui/options/model-options.js';
-import { CategoryType, CategoryData } from '/core/ui/options/options-helpers.js';
-import '/core/ui/options/options.js';
+// import { Options, OptionType } from '/core/ui/options/model-options.js';
+// import { CategoryType, CategoryData } from '/core/ui/options/options-helpers.js';
+// import '/core/ui/options/options.js';
+import { O as Options, a as OptionType, C as CategoryType, d as CategoryData } from '/core/ui/options/editors/index.chunk.js';
+import '/core/ui/options/editors/index.chunk.js';
 const proto = Object.getPrototypeOf(Options);
 // ============================================================================
 

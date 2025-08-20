@@ -1,6 +1,8 @@
-import { FxsChooserItem } from '/core/ui/components/fxs-chooser-item.js';
-import { ProductionPanelCategory, Construct } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
 import { InterfaceMode } from '/core/ui/interface-modes/interface-modes.js';
+// import { FxsChooserItem } from '/core/ui/components/fxs-chooser-item.js';
+// import { ProductionPanelCategory, Construct } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
+import { F as FxsChooserItem } from '/core/ui/components/fxs-chooser-item.chunk.js';
+import { P as ProductionPanelCategory, h as Construct } from '/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js';
 import { findItemForBuy, findItem } from './dan-panel-pc-decorator.js';
 import { ProductionChooserScreen } from '/base-standard/ui/production-chooser/panel-production-chooser.js';
 

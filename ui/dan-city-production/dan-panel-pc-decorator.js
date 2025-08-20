@@ -1,4 +1,5 @@
-import { GetProductionItems } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
+// import { GetProductionItems } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
+import { g as GetProductionItems } from '/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js';
 
 // 保存组件引用而不是数据
 let decoratedComponent = null;

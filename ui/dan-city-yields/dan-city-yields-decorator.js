@@ -7,9 +7,11 @@
  */
 
 // 导入必要的依赖
+// import CityYieldsEngine from '/base-standard/ui/utilities/utilities-city-yields.js';
+// import { ComponentID } from '/core/ui/utilities/utilities-component-id.js';
+import { C as CityYields } from '/base-standard/ui/utilities/utilities-city-yields.chunk.js';
+import { C as ComponentID } from '/core/ui/utilities/utilities-component-id.chunk.js';
 import { getUserModOptions } from '/f1rstdan-cool-ui/ui/options/f1rstdan-cool-ui-options.js';
-import CityYieldsEngine from '/base-standard/ui/utilities/utilities-city-yields.js';
-import { ComponentID } from '/core/ui/utilities/utilities-component-id.js';
 import { addCustomDataToYields } from '/f1rstdan-cool-ui/ui/dan-city-banners/dan-city-custom-data.js';
 
 // 定义产量类型对应的文本样式映射
@@ -55,7 +57,8 @@ export class DanCityYieldsDecorator {
                     console.error('city-yields: invalid city id');
                     return;
                 }
-                yields = CityYieldsEngine.getCityYieldDetails(cityId);
+                // yields = CityYieldsEngine.getCityYieldDetails(cityId);
+                yields = CityYields.getCityYieldDetails(cityId);
                 // 添加自定义数据
                 // this.addCustomYieldData(yields);
                 addCustomDataToYields(yields, Cities.get(cityId));

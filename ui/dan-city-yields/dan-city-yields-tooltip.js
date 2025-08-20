@@ -5,8 +5,9 @@
  * 
  */
 import TooltipManager from '/core/ui/tooltips/tooltip-manager.js';
-// import CityYieldsEngine from '/base-standard/ui/utilities/utilities-city-yields.js';
-import CityDetails from "/base-standard/ui/city-details/model-city-details.js";
+// import { default as TooltipManager } from '/core/ui/tooltips/tooltip-manager.js';
+// import CityDetails from "/base-standard/ui/city-details/model-city-details.js";
+import { C as CityDetails } from "/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js";
 import { getCityDanData } from '/f1rstdan-cool-ui/ui/dan-city-banners/dan-city-custom-data.js';
 const styleElement = document.createElement('style');
 styleElement.innerHTML = `
