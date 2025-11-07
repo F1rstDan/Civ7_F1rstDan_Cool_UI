@@ -1,3 +1,17 @@
+// 缓存城市数据以提高性能
+let cityDataCache = new Map();
+const CACHE_TIMEOUT = 5000; // 5秒缓存超时
+
+// 定期清理过期缓存
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, value] of cityDataCache.entries()) {
+        if (now - value.timestamp > CACHE_TIMEOUT) {
+            cityDataCache.delete(key);
+        }
+    }
+}, 60000); // 每分钟清理一次
+
 /**
  * 添加自定义数据到城市横幅 addCustomDataToCityBanner
  */
@@ -5,6 +19,19 @@ export const updateCustomDataToCityBanner = (type, city) => {
     if (!type || !city) {
         return;
     }
+    
+    // 创建缓存键
+    const cacheKey = `${type}_${city.id}`;
+    const now = Date.now();
+    
+    // 检查缓存是否有效
+    //if (cityDataCache.has(cacheKey)) {
+    //    const cached = cityDataCache.get(cacheKey);
+    //    if (now - cached.timestamp < CACHE_TIMEOUT) {
+    //        return cached.data;
+    //    }
+    //}
+    
     const dataHandlers = {
         'DAN_CITY_POPULATION': getPopulationData,
         'DAN_CITY_CONNECTIVITY': getConnectivityData,
@@ -18,6 +45,10 @@ export const updateCustomDataToCityBanner = (type, city) => {
     }
     // 保存数据到城市对象
     setCityDanData(data, type, city);
+    
+    // 更新缓存
+    cityDataCache.set(cacheKey, { data, timestamp: now });
+    
     return data;
 }
 
@@ -156,10 +187,12 @@ const getPopulationData = (city) => {
     }
 
     // 获取连接城市数量，用于判断专业化乡镇
+    // 使用缓存来避免重复的Cities.get调用
     const connectedCities = city.getConnectedCities ? city.getConnectedCities() : [];
     let conectedCityCount = 0;
     if (connectedCities && connectedCities.length > 0) {
         for (const connectedCityID of connectedCities) {
+            // 缓存城市对象以避免重复查询
             const connectedCity = Cities.get(connectedCityID);
             if (connectedCity && !connectedCity.isTown) {
                 conectedCityCount++;

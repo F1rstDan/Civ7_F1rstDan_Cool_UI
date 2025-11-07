@@ -26,7 +26,8 @@ export class DanCityBannersDecorator {
         
         // 添加防抖功能，更新城市连接数据
         this.updateConnectivityData = this.debounce(this.updateConnectivityData.bind(this), 300);
-        // this.updateConnectivityData = this.updateConnectivityData.bind(this);
+        // TODO 事件触发时判断是否有关联城市
+        // this.onUpdateConnectivityData = this.debounce(this.onUpdateConnectivityData.bind(this), 300);
     }
 
     // 添加防抖函数。（防止读档时，过多触发事件造成频繁更新数据）
@@ -44,12 +45,15 @@ export class DanCityBannersDecorator {
         const observerPopulationConfig = { attributes: true, attributeFilter: ['value', 'max-value'] }; // currentFood and nextThreshold
         this.observerPopulation.observe(this.component.elements.growthQueueMeter, observerPopulationConfig);
         // 监听城市事件，以便在城市数据发生变化时更新 城市连接数数据
+        // 合并事件监听器，只监听关键事件以减少性能开销
+        // todo 不应该监听事件？而是有这些事件发生时，更新目标城市关联的城市数据？
         engine.on('CityAddedToMap', this.updateConnectivityData);
         engine.on('CityInitialized', this.updateConnectivityData); // Use instead of CityAddedToMap, as not all values are populated when that event fires.
         engine.on('CityNameChanged', this.updateConnectivityData);
         engine.on('CapitalCityChanged', this.updateConnectivityData);
-        // engine.on('CityYieldChanged', this.updateConnectivityData);
         engine.on('CityRemovedFromMap', this.updateConnectivityData);
+        // 移除部分不必要或过于频繁的事件监听器
+        // engine.on('CityYieldChanged', this.updateConnectivityData);
         // engine.on('CitySelectionChanged', this.updateConnectivityData);
         engine.on('CityStateBonusChosen', this.updateConnectivityData);
         engine.on('CityGovernmentLevelChanged', this.updateConnectivityData);
@@ -84,8 +88,8 @@ export class DanCityBannersDecorator {
         engine.off('CityInitialized', this.updateConnectivityData); // Use instead of CityAddedToMap, as not all values are populated when that event fires.
         engine.off('CityNameChanged', this.updateConnectivityData);
         engine.off('CapitalCityChanged', this.updateConnectivityData);
-        // engine.off('CityYieldChanged', this.updateConnectivityData);
         engine.off('CityRemovedFromMap', this.updateConnectivityData);
+        // engine.off('CityYieldChanged', this.updateConnectivityData);
         // engine.off('CitySelectionChanged', this.updateConnectivityData);
         engine.off('CityStateBonusChosen', this.updateConnectivityData);
         engine.off('CityGovernmentLevelChanged', this.updateConnectivityData);
@@ -189,7 +193,13 @@ export class DanCityBannersDecorator {
         //     connectivityTurnNumber.classList.add('hidden');
         // }
     }
-
+    // todo 城市事件触发时判断是否与之有关，如果不在关联城市列表中，则不更新
+    OnUpdateConnectivityData() {
+        // const connectedCities = city.getConnectedCities ? city.getConnectedCities() : [];
+        // 触发事件的城市的连接数据，是否包含当前城市
+        // for (const connectedCityID of connectedCities)
+        // updateConnectivityData();
+    }
     // 应用 Tooltip 到 人口 元素
     applyPopulationTooltip(){
         const city = this.component.city;
@@ -240,14 +250,27 @@ export class DanCityBannersDecorator {
      * @param {string} propertyName - 元素属性名称
      * @param {string} tagName - 元素标签名称
      * @param {string} className - 元素的类名
-     * @param {HTMLElement} parentElement - 父元素
+     * @param {HTMLElement} [parentElement] - 可选，父元素，若提供则将元素添加到该父元素中
+     * @returns {HTMLElement} 创建或已存在的DOM元素
      */
     createCustomElement(propertyName, tagName, className, parentElement) {
+        // 确保存储容器存在，避免访问undefined错误
+        if (!this.component) {
+            console.error('F1rstDan city-banners: this.component is undefined');
+            return
+        }
+        // 若元素不存在则创建并初始化
         if (!this.component[propertyName]) {
             this.component[propertyName] = document.createElement(tagName);
             this.component[propertyName].className = className;
         }
-        if (parentElement) parentElement.appendChild(this.component[propertyName]);
+        // 处理父元素：验证有效性并避免重复添加
+        if (parentElement && parentElement instanceof HTMLElement) {
+            // 仅当元素不在父元素中时才添加，防止不必要的DOM操作
+            if (!parentElement.contains(this.component[propertyName])) {
+                parentElement.appendChild(this.component[propertyName]);
+            }
+        }
         return this.component[propertyName];
     }
 }

@@ -2,6 +2,7 @@
  * F1rstDan's Cool UI - 城市产量装饰器
  * 非侵入式实现，使用装饰器模式扩展city-yields组件功能
  * sourceMappingURL=file:///base-standard/ui/production-chooser/city-yields.js.map
+ * "base-standard\ui\production-chooser\panel-production-chooser.js"
  * MOD下载地址：https://forums.civfanatics.com/resources/31961/
  * GitHub：https://github.com/F1rstDan/Civ7_F1rstDan_Cool_UI
  */
@@ -35,42 +36,48 @@ const yieldTypeTextClassMap = {
 export class DanCityYieldsDecorator {
     constructor(component) {
         this.cityYields = component; // 保存原始控件引用
+
+        // TODO
+        // 在外层传递 城市ID
+        // 获取每个元素
+        // 根据城市ID和收入类型 获取详细数据
+        // 添加 Tooltip ， .setAttribute('data-tooltip-style', 'dan-city-yields-tooltip');
         
-        // 绑定方法到实例
-        this.createOrUpdateYieldEntry = this.createOrUpdateYieldEntry.bind(this);
-        // 添加防抖函数
-        this.debounce = (func, wait) => {
-            let timeout;
-            return function(...args) {
-                const context = this;
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(context, args), wait);
-            };
-        };
+        // // 绑定方法到实例
+        // this.createOrUpdateYieldEntry = this.createOrUpdateYieldEntry.bind(this);
+        // // 添加防抖函数
+        // this.debounce = (func, wait) => {
+        //     let timeout;
+        //     return function(...args) {
+        //         const context = this;
+        //         clearTimeout(timeout);
+        //         timeout = setTimeout(() => func.apply(context, args), wait);
+        //     };
+        // };
         
-        // 扩展原始refresh方法
-        const originalRefresh = this.cityYields.refresh;
-        this.cityYields.refresh = (yields) => {
-            if (!yields) {
-                const cityId = this.cityYields.cityID;
-                if (!cityId || !ComponentID.isValid(cityId)) {
-                    console.error('city-yields: invalid city id');
-                    return;
-                }
-                // yields = CityYieldsEngine.getCityYieldDetails(cityId);
-                yields = CityYields.getCityYieldDetails(cityId);
-                // 添加自定义数据
-                // this.addCustomYieldData(yields);
-                addCustomDataToYields(yields, Cities.get(cityId));
-            }
-            for (const yieldData of yields) {
-                this.createOrUpdateYieldEntry(yieldData);
-            }
-        };
-        // 应用防抖，设置300毫秒延迟 （防止过多触发事件造成频繁更新数据）
-        this.cityYields.refresh = this.debounce(this.cityYields.refresh, 150);
-        // 扩展原始createOrUpdateYieldEntry方法
-        this.cityYields.createOrUpdateYieldEntry = this.createOrUpdateYieldEntry;
+        // // 扩展原始refresh方法
+        // const originalRefresh = this.cityYields.refresh;
+        // this.cityYields.refresh = (yields) => {
+        //     if (!yields) {
+        //         const cityId = this.cityYields.cityID;
+        //         if (!cityId || !ComponentID.isValid(cityId)) {
+        //             console.error('city-yields: invalid city id');
+        //             return;
+        //         }
+        //         // yields = CityYieldsEngine.getCityYieldDetails(cityId);
+        //         yields = CityYields.getCityYieldDetails(cityId);
+        //         // 添加自定义数据
+        //         // this.addCustomYieldData(yields);
+        //         addCustomDataToYields(yields, Cities.get(cityId));
+        //     }
+        //     for (const yieldData of yields) {
+        //         this.createOrUpdateYieldEntry(yieldData);
+        //     }
+        // };
+        // // 应用防抖，设置500毫秒延迟 （防止过多触发事件造成频繁更新数据）
+        // this.cityYields.refresh = this.debounce(this.cityYields.refresh, 150);
+        // // 扩展原始createOrUpdateYieldEntry方法
+        // this.cityYields.createOrUpdateYieldEntry = this.createOrUpdateYieldEntry;
     }
 
     get isYieldsBarValueFormat() {
@@ -93,9 +100,17 @@ export class DanCityYieldsDecorator {
      */
     afterAttach() {
         // 确保组件正确初始化
-        // if (this.cityYields && this.cityYields.refresh) {
-        //     this.cityYields.refresh();
-        // }
+        // console.error('F1rstDan city-yields:',this.cityYields);
+        // console.error('F1rstDan city-yields._yieldBarData:',JSON.stringify(this.cityYields._yieldBarData));
+
+        // console.error('F1rstDan city-yields._yieldBarDeltas:',JSON.stringify(this.cityYields._yieldBarDeltas));
+        // console.error('F1rstDan city-yields [outerHTML]:',this.cityYields.Root.outerHTML); //过长报错
+        // 添加tooltip属性
+        // this.cityYields.Root.setAttribute('data-tooltip-style', 'dan-city-yields-tooltip');
+        // this.cityYields.Root.classList.add('pointer-events-auto');
+        // this.cityYields.Root.setAttribute("pointer-events-auto", "");
+        // this.cityYields.Root.removeAttribute("pointer-events-none");
+        // this.cityYields.Root.setAttribute("data-tooltip-content", "F1rstDan's Cool UI");
     }
 
     beforeDetach() {
@@ -167,4 +182,6 @@ export class DanCityYieldsDecorator {
     }
 }
 
-Controls.decorate('city-yields', (component) => new DanCityYieldsDecorator(component));
+// Controls.decorate('city-yields', (component) => new DanCityYieldsDecorator(component));
+Controls.decorate('yield-bar-base', (component) => new DanCityYieldsDecorator(component));
+

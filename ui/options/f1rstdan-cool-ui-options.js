@@ -373,8 +373,15 @@ proto.resetOptionsToDefault = function(...args) {
 // ============================================================================
 
 
-
-
+// 修复 1.3.0 ，2025-11-05
+// fix Options initialization
+Options.addInitCallback = function(callback) {
+    if (this.optionsReInitCallbacks.length && !this.optionsInitCallbacks.length) {
+        throw new Error("Options already initialized, cannot add init callback");
+    }
+    this.optionsInitCallbacks.push(callback);
+    this.optionsReInitCallbacks.push(callback);
+}
 // ============================================================================
 // 选项注册: 将选项添加到游戏UI
 // ============================================================================

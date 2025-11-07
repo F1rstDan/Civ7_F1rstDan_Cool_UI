@@ -14,72 +14,19 @@ export const CreateQuickBuyItem = () => {
     return item;
 };
 
-// 判断项目在购买模式下是否被禁用（注意传进来的是该按钮的数据）
-// 过时：`Game.CityCommands.canStartQuery` 应该换成 `Game.CityCommands.canStart`
-function isItemDisabledInPurchaseMode(data) {
-    const city = Cities.get(UI.Player.getHeadSelectedCity());
-    const itemCategory = data.category;
-    const itemType = data.type;
-    const itemCost = data.cost;
-    // 确保城市有效且有Gold属性
-    if (!city?.Gold) return true;   // 如果城市没有Gold属性，则项目被禁用
-    if (!itemCost && itemCost < 0) return true;  // 如果成本小于0，是异常情况，则项目被禁用
-    // 如果玩家金币不够买，直接返回禁用
-    const playerGoldBalance = Players.Treasury.get(GameContext.localPlayerID)?.goldBalance ?? 0;
-    if (playerGoldBalance < itemCost ) {
-        return true;
-    }
-    // 如果是单位类型
-    if (itemCategory === ProductionPanelCategory.UNITS) {
-        // 查询可购买的单位
-        const results = Game.CityCommands.canStartQuery(city.id, CityCommandTypes.PURCHASE, CityQueryType.Unit);
-        // 查找特定单位类型的结果
-        const unitResult = results.find(({ index }) => {
-            const definition = GameInfo.Units.lookup(index);
-            return definition && definition.UnitType === itemType;
-        });
-        // 如果找不到单位或结果，则单位被禁用
-        if (!unitResult) {
-            return true;
+// 缓存上次更新的数据以避免不必要的DOM更新
+let updateCache = new Map();
+const CACHE_TIMEOUT = 1000; // 1秒缓存超时
+
+// 按需清理过期缓存，避免定时器卡顿
+function cleanUpdateCache() {
+    const now = Date.now();
+    for (const [key, value] of updateCache.entries()) {
+        if (now - value.timestamp > CACHE_TIMEOUT * 5) { // 5倍超时时间后清理
+            updateCache.delete(key);
         }
-        const { result } = unitResult;
-        // 检查是否因为需求完全失败或过时而被禁用
-        if (result.Requirements?.FullFailure || result.Requirements?.Obsolete) {
-            return true;
-        }
-        // 最终判断：如果result.Success为false，则单位被禁用
-        return !result.Success;
-    } else {
-        // 如果是建筑类型
-        // 查询可购买的建筑
-        const results = Game.CityCommands.canStartQuery(city.id, CityCommandTypes.PURCHASE, CityQueryType.Constructible);
-        // 查找特定建筑类型的结果
-        const buildingResult = results.find(({ index }) => {
-            const definition = GameInfo.Constructibles.lookup(index);
-            return definition && definition.ConstructibleType === itemType;
-        });
-        // 如果找不到建筑或结果，则建筑被禁用
-        if (!buildingResult) {
-            return true;
-        }
-        const { result } = buildingResult;
-        // 检查是否因为需求完全失败或过时而被禁用
-        if (result.Requirements?.FullFailure || result.Requirements?.Obsolete) {
-            return true;
-        }
-        // 检查是否已经存在或在队列中
-        if (result.AlreadyExists || result.InQueue) {
-            return true;
-        }
-        // // 检查是否有合适的位置
-        // if (result.Plots?.length === 0 && !result.ExpandUrbanPlots?.length) {
-        //     return true;
-        // }
-        // 最终判断：如果result.Success为false，则建筑被禁用
-        return !result.Success;
     }
 }
-
 
 // 更新快速购买按钮的数据
 export const UpdateQuickBuyItem = (element) => {
@@ -107,6 +54,22 @@ export const UpdateQuickBuyItem = (element) => {
     const parentData = element.parentElement.dataset;
     const category = parentData.category;
     const type = parentData.type;
+    
+    // 创建缓存键
+    const cacheKey = `${category}_${type}_${city?.id}`;
+    const now = Date.now();
+
+    // 清理过期缓存，避免 setInterval 卡顿
+    cleanUpdateCache();
+
+    // 检查缓存是否有效
+    if (updateCache.has(cacheKey)) {
+        const cached = updateCache.get(cacheKey);
+        if (now - cached.timestamp < CACHE_TIMEOUT) {
+            // 如果缓存未过期，直接返回
+            return;
+        }
+    }
     
     // 如果在购买模式下，直接隐藏按钮并退出。减少计算
     // 如果是奇观或项目，直接排除在外。
@@ -140,13 +103,14 @@ export const UpdateQuickBuyItem = (element) => {
         element.setAttribute('disabled', (!!data.disabled).toString());
     }
 
-    element.dataset.name = data.name;
-    element.dataset.type = data.type;
-    element.dataset.category = data.category;
-    element.dataset.isPurchase = 'true';
-    element.dataset.cost = data.cost.toString();
-    element.dataset.turns = data.turns.toString();
-    if (data.error) element.dataset.error = data.error;
+    // 只有在数据发生变化时才更新DOM属性
+    if (element.dataset.name !== data.name) element.dataset.name = data.name;
+    if (element.dataset.type !== data.type) element.dataset.type = data.type;
+    if (element.dataset.category !== data.category) element.dataset.category = data.category;
+    if (element.dataset.isPurchase !== 'true') element.dataset.isPurchase = 'true';
+    if (element.dataset.cost !== data.cost.toString()) element.dataset.cost = data.cost.toString();
+    if (element.dataset.turns !== data.turns.toString()) element.dataset.turns = data.turns.toString();
+    if (data.error && element.dataset.error !== data.error) element.dataset.error = data.error;
 
     // 如果 生产项(父元素) 开启了显示生产力成本，直接获取。不然就自己计算
     if (!parentData.productionCost) {
@@ -159,10 +123,14 @@ export const UpdateQuickBuyItem = (element) => {
             // productionCost = city.Production?.getConstructibleProductionCost(data.type, FeatureTypes.NO_FEATURE, ResourceTypes.NO_RESOURCE);
             productionCost = city.Production?.getConstructibleProductionCost(data.type, FeatureTypes.NO_FEATURE, false);
         }
-        element.dataset.productionCost = productionCost.toString();
+        if (element.dataset.productionCost !== productionCost.toString()) {
+            element.dataset.productionCost = productionCost.toString();
+        }
         // console.error('F1rstDan UpdateQuickBuyItem: parentData.productionCost is undefined',productionCost.toString());
     } else {
-        element.dataset.productionCost = parentData.productionCost;
+        if (element.dataset.productionCost !== parentData.productionCost) {
+            element.dataset.productionCost = parentData.productionCost;
+        }
         // console.error('F1rstDan UpdateQuickBuyItem: parentData.productionCost YSE',parentData.productionCost);
     }
     
@@ -172,12 +140,10 @@ export const UpdateQuickBuyItem = (element) => {
     if (!baseProductionCost) {
         if (data.category === ProductionPanelCategory.UNITS) {
             // 对于单位，从Unit_Costs表获取基础成本
-            const unitCosts = GameInfo.Unit_Costs.filter(cost => cost.UnitType === data.type);
-            if (unitCosts.length > 0) {
-                const productionCost = unitCosts.find(cost => cost.YieldType === 'YIELD_PRODUCTION');
-                if (productionCost) {
-                    baseProductionCost = productionCost.Cost;
-                }
+            // 优化：使用find而不是filter以提高性能
+            const unitCost = GameInfo.Unit_Costs.find(cost => cost.UnitType === data.type && cost.YieldType === 'YIELD_PRODUCTION');
+            if (unitCost) {
+                baseProductionCost = unitCost.Cost;
             }
         } else {
             // 对于建筑，直接从Constructibles表获取Cost属性
@@ -186,12 +152,32 @@ export const UpdateQuickBuyItem = (element) => {
                 baseProductionCost = constructible.Cost;
             }
         }
-        element.dataset.baseProductionCost = baseProductionCost.toString();
-        element.dataset.baseCost = (baseProductionCost * 4).toString(); // 金币成本是产生里基础成本 * 4
+        if (baseProductionCost) {
+            if (element.dataset.baseProductionCost !== baseProductionCost.toString()) {
+                element.dataset.baseProductionCost = baseProductionCost.toString();
+            }
+            const baseCost = (baseProductionCost * 4).toString();
+            if (element.dataset.baseCost !== baseCost) {
+                element.dataset.baseCost = baseCost; // 金币成本是生产力基础成本 * 4
+            }
+        }
     }
-    // 计算折扣价
-    element.dataset.productionRate = Math.floor((baseProductionCost - element.dataset.productionCost) / baseProductionCost * 100);
-    element.dataset.goldRate = Math.floor((element.dataset.baseCost - element.dataset.cost) / element.dataset.baseCost * 100);
+    // 只有在基础成本有效时才计算折扣率
+    if (baseProductionCost && baseProductionCost > 0) {
+        const productionRate = Math.floor((baseProductionCost - element.dataset.productionCost) / baseProductionCost * 100);
+        if (element.dataset.productionRate !== productionRate.toString()) {
+            element.dataset.productionRate = productionRate;
+        }
+    }
+    if (element.dataset.baseCost && element.dataset.cost) {
+        const goldRate = Math.floor((element.dataset.baseCost - element.dataset.cost) / element.dataset.baseCost * 100);
+        if (element.dataset.goldRate !== goldRate.toString()) {
+            element.dataset.goldRate = goldRate;
+        }
+    }
+    
+    // 更新缓存
+    updateCache.set(cacheKey, { timestamp: now });
 };
 
 // 快速购买按钮组件

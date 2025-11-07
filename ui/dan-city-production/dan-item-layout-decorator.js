@@ -176,6 +176,8 @@ export class DanProductionItemDecorator {
         // 次要详情元素
         this.moveElement(this.item.secondaryDetailsElement, this.item.mainInfoDetailsRow);
         this.updateClassList(this.item.secondaryDetailsElement, '', 'font-bold f1dan-size-8-adjust');
+        // 建筑次要详情元素 2025-11-07
+        this.moveElement(this.item.alternateYieldElement, this.item.mainInfoDetailsRow);
         // 维护费元素
         this.createCustomElement('maintenanceElement', 'span', 'flex text-xs text-negative-light font-bold px-1 hidden', this.item.secondaryDetailsElement);
 
@@ -238,14 +240,27 @@ export class DanProductionItemDecorator {
      * @param {string} propertyName - 元素属性名称
      * @param {string} tagName - 元素标签名称
      * @param {string} className - 元素的类名
-     * @param {HTMLElement} parentElement - 父元素
+     * @param {HTMLElement} [parentElement] - 可选，父元素，若提供则将元素添加到该父元素中
+     * @returns {HTMLElement} 创建或已存在的DOM元素
      */
     createCustomElement(propertyName, tagName, className, parentElement) {
+        // 确保存储容器存在，避免访问undefined错误
+        if (!this.item) {
+            console.error('F1rstDan city-banners: this.component is undefined');
+            return
+        }
+        // 若元素不存在则创建并初始化
         if (!this.item[propertyName]) {
             this.item[propertyName] = document.createElement(tagName);
             this.item[propertyName].className = className;
         }
-        if (parentElement) parentElement.appendChild(this.item[propertyName]);
+        // 处理父元素：验证有效性并避免重复添加
+        if (parentElement && parentElement instanceof HTMLElement) {
+            // 仅当元素不在父元素中时才添加，防止不必要的DOM操作
+            if (!parentElement.contains(this.item[propertyName])) {
+                parentElement.appendChild(this.item[propertyName]);
+            }
+        }
         return this.item[propertyName];
     }
     /**

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Mod id="f1rstdan-cool-ui" version="1"
+<Mod id="f1rstdan-cool-ui" version="1.9.3"
     xmlns="ModInfo">
     <Properties>
         <Name>LOC_MOD_F1RSTDAN_COOL_UI_NAME</Name>
-        <Version>1.9.2</Version>
+        <Version>1.9.3</Version>
         <Description>LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION</Description>
         <Authors>F1rstDan</Authors>
         <URL>https://forums.civfanatics.com/resources/31961/</URL>
