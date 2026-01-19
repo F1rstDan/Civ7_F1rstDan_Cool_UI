@@ -135,15 +135,6 @@ const modCategory = CategoryType.Mods || CategoryType.Game;
 // }
 
 const settingsConfig = [
-    {   // 城市收入栏数值四舍五入
-        name: 'cityYieldsBarValueFormat',
-        defaultValue: false,
-        id: "f1rstdan-city-yields-bar-value-format",
-        type: OptionType.Checkbox,
-        label: "LOC_OPTIONS_F1RSTDAN_CITY_YIELDS_BAR_VALUE_FORMAT",
-        description: "LOC_OPTIONS_F1RSTDAN_CITY_YIELDS_BAR_VALUE_FORMAT_DESCRIPTION",
-        requiresRestart: false
-    },
     {   // 生产项目栏是否应用自定义布局
         name: 'pItemApplyLayout',
         defaultValue: true,

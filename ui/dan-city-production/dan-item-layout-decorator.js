@@ -3,16 +3,16 @@
  * 非侵入式实现，使用装饰器模式扩展production-chooser-item组件功能
  * 实现自定义样式和布局，而不修改原始文件
  * sourceMappingURL=file:///base-standard/ui/production-chooser/production-chooser-item.js.map
- * MOD下载地址：https://forums.civfanatics.com/resources/31961/
+ * MOD下载地址：https://steamcommunity.com/sharedfiles/filedetails/?id=3510572267 ; https://forums.civfanatics.com/resources/31961/
  * GitHub：https://github.com/F1rstDan/Civ7_F1rstDan_Cool_UI
  */
 
-// 导入可能需要的依赖
-// import { ProductionPanelCategory } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
-import { P as ProductionPanelCategory} from '/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js';
+import { P as ProductionPanelCategory } from '/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js';
 import { getUserModOptions } from '/f1rstdan-cool-ui/ui/options/f1rstdan-cool-ui-options.js';
 import './dan-quick-buy-item.js';
 import { UpdateQuickBuyItem } from './dan-quick-buy-item.js';
+
+// 注入自定义样式
 const styleElement = document.createElement('style');
 styleElement.innerHTML = `
     .dan-border-radius {
@@ -23,13 +23,13 @@ styleElement.innerHTML = `
         background-color: rgba(0, 0, 0, 0.2);
     }
     .f1dan-size-5 .advisor-recommendation__container .advisor-recommendation__icon {
-	width: 1.1rem;
-	height: 1.1rem;
+        width: 1.1rem;
+        height: 1.1rem;
     }
     .f1dan-size-8-adjust .size-8 {
-	width: 1.3rem;
-	height: 1.3rem;
-    margin-right: 0rem;
+        width: 1.3rem;
+        height: 1.3rem;
+        margin-right: 0rem;
     }
 `;
 document.head.appendChild(styleElement);
@@ -40,492 +40,402 @@ document.head.appendChild(styleElement);
  */
 export class DanProductionItemDecorator {
     constructor(component) {
-        // 保存原始控件引用
         this.item = component;
-        // // 绑定方法到实例
-        // this.applyCustomLayout = this.applyCustomLayout.bind(this);
-        // this.refreshMaintenance = this.refreshMaintenance.bind(this);
-        // this.refreshProductionCost = this.refreshProductionCost.bind(this);
-        // this.UpdateQuickBuyButton = this.UpdateQuickBuyButton.bind(this);
 
-        // 扩展原始方法。当属性发生变化时调用
+        // 扩展原始方法：当属性发生变化时调用
         if (this.item.onAttributeChanged) {
             const originalOnAttributeChanged = this.item.onAttributeChanged;
             this.item.onAttributeChanged = (name, oldValue, newValue) => {
-                // 调用原始方法
                 originalOnAttributeChanged.call(this.item, name, oldValue, newValue);
-                
-                // 在原方法后执行自定义代码
                 this.handleAttributeChanged(name, oldValue, newValue);
             };
         }
     }
 
+    // #region 配置获取
     get isApplyLayout() {
-        try {
-            return getUserModOptions().pItemApplyLayout;
-        } catch (error) {
-            console.error('F1rstDan ModOptions get isApplyLayout error:', error);
-            return true;    // 如果MOD配置异常，默认启动
-        }
+        return this._getOption('pItemApplyLayout');
     }
+
     get isDisplayMaintenance() {
-        try {
-            return getUserModOptions().pItemDisplayMaintenance;
-        } catch (error) {
-            console.error('F1rstDan ModOptions get isDisplayMaintenance error:', error);
-            return true;    // 如果MOD配置异常，默认启动
-        }
+        return this._getOption('pItemDisplayMaintenance');
     }
+
     get isDisplayProductionCost() {
+        return this._getOption('pItemDisplayProductionCost');
+    }
+
+    /**
+     * 获取MOD配置选项的通用方法
+     */
+    _getOption(key, defaultValue = true) {
         try {
-            return getUserModOptions().pItemDisplayProductionCost;
+            return getUserModOptions()[key];
         } catch (error) {
-            console.error('F1rstDan ModOptions get isDisplayProductionCost error:', error);
-            return true;    // 如果MOD配置异常，默认启动
+            console.error(`F1rstDan ModOptions get ${key} error:`, error);
+            return defaultValue;
         }
     }
-    
-    /**
-     * 在控件附加到DOM之前调用
-     * 适合进行DOM元素的初始化准备工作
-     */
+    // #endregion
+
+    // #region 生命周期钩子
     beforeAttach() {
-        try {
-            // 初始化准备工作
-        } catch (error) {
-            console.error('DanProductionItemDecorator beforeAttach error:', error);
-        }
+        // 初始化准备工作
     }
-    
-    /**
-     * 在控件附加到DOM之后调用
-     * DOM元素已经可以安全访问和操作
-     */
+
     afterAttach() {
         try {
-            // 应用自定义布局和样式
-            if (this.isApplyLayout){
+            if (this.isApplyLayout) {
                 this.applyCustomLayout();
             }
-            // 刷新维护费显示
-            if (this.isDisplayMaintenance){
+            if (this.isDisplayMaintenance) {
                 this.refreshMaintenance();
             }
-            // 刷新生产力花费显示
-            if (this.isDisplayProductionCost){
+            if (this.isDisplayProductionCost) {
                 this.refreshProductionCost();
             }
-            // 初始化快速购买按钮
-            this.UpdateQuickBuyButton();
+            this.updateQuickBuyButton();
         } catch (error) {
             console.error('F1rstDan DanProductionItemDecorator afterAttach error:', error);
         }
     }
-    
-    /**
-     * 在控件从DOM分离之前调用
-     * 清理资源，避免内存泄漏
-     */
+
     beforeDetach() {
-        // 清理工作（如果需要）
+        // 清理资源
     }
-    
-    /**
-     * 在控件从DOM分离之后调用
-     */
+
     afterDetach() {
-        // 最终清理（如果需要）
+        // 最终清理
     }
-    
+    // #endregion
+
+    // #region 核心功能方法
+
     /**
-     * 应用自定义布局和样式到组件
-     * 合并了样式应用和DOM结构调整功能
-     * 按照目标文件中constructor的顺序层级组织代码
+     * 应用自定义布局和样式
+     * 重组DOM结构以优化显示效果
      */
     applyCustomLayout() {
         if (!this.item.Root) return;
 
-        // 根元素
+        // 1. 调整根元素和容器样式
         this.updateClassList(this.item.Root, ['text-sm'], ['text-xs', 'leading-tight']);
         this.updateClassList(this.item.container, ['p-2', 'tracking-100'], ['p-1']);
 
-        // 左侧图标区
+        // 2. 调整图标大小
         this.updateClassList(this.item.iconElement, ['size-16'], ['size-12']);
 
-        // 【主要信息区】 （名称/无时代/推荐图标//错误信息/次要详情/维护费）
+        // 3. 构建主要信息区 (Main Info Area) （无时代/名称/推荐图标//错误信息/次要详情/维护费）
         this.createCustomElement('mainInfoArea', 'div', 'relative flex flex-col flex-auto items-start justify-center', this.item.container);
-        this.createCustomElement('mainInfoTopRow', 'div', 'flex flex-shrink items-center', this.item.mainInfoArea);  // 主要信息顶部行
-        // 无时代标记容器
-        this.moveElement(this.item.agelessContainer, this.item.mainInfoTopRow, 'hidden flex items-center', `
-            <img src="fs://game/city_ageless.png" class="size-5 ml-1"/>
-        `);
+        
+        // 3.1 顶部行 (Top Row): 无时代标记 + 名称 + 推荐图标
+        this.createCustomElement('mainInfoTopRow', 'div', 'flex flex-shrink items-center', this.item.mainInfoArea);
+        
+        // 无时代标记
+        this.moveElement(this.item.agelessContainer, this.item.mainInfoTopRow, 'hidden flex items-center', 
+            `<img src="fs://game/city_ageless.png" class="size-5 ml-1"/>`);
         this.toggleVisibility(this.item.agelessContainer, this.item.Root.getAttribute('data-is-ageless') === 'true');
-        // 物品名称元素
+
+        // 名称
         this.moveElement(this.item.itemNameElement, this.item.mainInfoTopRow);
         this.updateClassList(this.item.itemNameElement, 'text-xs mb-1', 'text-sm tracking-100 ml-2');
-        // 推荐图标容器
+
+        // 推荐图标
         this.moveElement(this.item.recommendationsContainer, this.item.mainInfoTopRow);
         this.updateClassList(this.item.recommendationsContainer, 'mr-2', 'ml-2 f1dan-size-5');
 
-        // 错误文本元素
+        // 错误文本 (放在主要信息区)
         this.moveElement(this.item.errorTextElement, this.item.mainInfoArea);
 
-        // 主要信息详情行
+        // 3.2 详情行 (Details Row): 次要详情 + 建筑产出 + 维护费
         this.createCustomElement('mainInfoDetailsRow', 'div', 'flex flex-shrink items-center', this.item.mainInfoArea);
-        // 次要详情元素
+        
+        // 次要详情 (单位类型/回合数等)
         this.moveElement(this.item.secondaryDetailsElement, this.item.mainInfoDetailsRow);
         this.updateClassList(this.item.secondaryDetailsElement, '', 'font-bold f1dan-size-8-adjust');
-        // 建筑次要详情元素 2025-11-07
+
+        // 建筑产出
         this.moveElement(this.item.alternateYieldElement, this.item.mainInfoDetailsRow);
-        // 维护费元素
+
+        // 维护费容器
         this.createCustomElement('maintenanceElement', 'span', 'flex text-xs text-negative-light font-bold px-1 hidden', this.item.secondaryDetailsElement);
 
-        // 【右侧执行信息区】 （生产力花费/制作成本）
+        // 4. 构建右侧信息区 (Right Info Area): 成本 + 生产力花费
         this.createCustomElement('rightInfoArea', 'div', 'relative flex flex-col items-center justify-center', this.item.container);
-        // this.createCustomElement('rightTopRow', 'div', 'flex items-center', this.item.rightInfoArea);   // 右侧顶部行
+        
         // 成本容器
         this.moveElement(this.item.costContainer, this.item.rightInfoArea);
         this.updateClassList(this.item.costContainer, '', 'justify-center font-bold');
 
-        // 生产力花费容器
-        this.createCustomElement('productionCostContainer', 'span', 'flex items-center mx-3 production-chooser-tooltip__subtext-bg rounded hidden', this.item.costContainer);
+        // 生产力花费容器 (插入到成本容器最前面)
+        this.createCustomElement('productionCostContainer', 'span', 'flex items-center mx-3 production-chooser-tooltip__subtext-bg rounded hidden');
         this.createCustomElement('productionCostAmount', 'span', 'text-xs text-primary-1 leading-tight ml-2 font-title', this.item.productionCostContainer);
         this.createCustomElement('productionIcon', 'fxs-icon', 'size-5 mx-1', this.item.productionCostContainer);
         this.item.productionIcon.setAttribute('data-icon-id', 'YIELD_PRODUCTION');
         this.item.productionIcon.setAttribute('data-icon-context', 'YIELD');
-        // 调整位置，让 '生产力花费' 在 '成本' 之前
-        if (this.item.costContainer.firstChild) {
-            this.item.costContainer.insertBefore(this.item.productionCostContainer, this.item.costContainer.firstChild);
-        }
 
-        // 确保DOM结构正确
-        if (this.item.container) {
-            // 确保图标在容器中
-            if (this.item.iconElement && !this.item.container.contains(this.item.iconElement)) {
-                this.item.container.insertBefore(this.item.iconElement, this.item.container.firstChild);
-            }
-            
-            // 确保主要信息区在图标之后
-            if (this.item.mainInfoArea && this.item.iconElement && this.item.iconElement.nextSibling !== this.item.mainInfoArea) {
-                this.item.container.insertBefore(this.item.mainInfoArea, this.item.iconElement.nextSibling);
-            }
-            
-            // 确保右侧信息区在最后
-            if (this.item.rightInfoArea && !this.item.container.contains(this.item.rightInfoArea)) {
-                this.item.container.appendChild(this.item.rightInfoArea);
-            }
-        }
-    }
-    // 不止添加按钮，还更新保持布局
-    UpdateQuickBuyButton() {
-        const quickBuyButton = this.createCustomElement('quickBuyButton', 'quick-buy-item', '', this.item.Root);
-        // 保证按钮在右侧
-        this.item.Root.appendChild(this.item.quickBuyButton);
-
-        // 传递数据给按钮
-        UpdateQuickBuyItem(quickBuyButton);
-    }
-
-    // 辅助函数
-    /**
-     * 获取是否为购买模式
-     * @returns {boolean} 是否为购买模式
-     */
-    get isPurchase() {
-        return this.item.Root.getAttribute('data-is-purchase')  === 'true';
-    }
-    /**
-     * 创建自定义元素。确保自定义元素存在，如果不存在则创建。 
-     * @param {string} propertyName - 元素属性名称
-     * @param {string} tagName - 元素标签名称
-     * @param {string} className - 元素的类名
-     * @param {HTMLElement} [parentElement] - 可选，父元素，若提供则将元素添加到该父元素中
-     * @returns {HTMLElement} 创建或已存在的DOM元素
-     */
-    createCustomElement(propertyName, tagName, className, parentElement) {
-        // 确保存储容器存在，避免访问undefined错误
-        if (!this.item) {
-            console.error('F1rstDan city-banners: this.component is undefined');
-            return
-        }
-        // 若元素不存在则创建并初始化
-        if (!this.item[propertyName]) {
-            this.item[propertyName] = document.createElement(tagName);
-            this.item[propertyName].className = className;
-        }
-        // 处理父元素：验证有效性并避免重复添加
-        if (parentElement && parentElement instanceof HTMLElement) {
-            // 仅当元素不在父元素中时才添加，防止不必要的DOM操作
-            if (!parentElement.contains(this.item[propertyName])) {
-                parentElement.appendChild(this.item[propertyName]);
-            }
-        }
-        return this.item[propertyName];
-    }
-    /**
-     * 更新元素的类列表
-     * (可接受字符串形式的类名，也能接受数组形式的类名)
-     * @param {HTMLElement} element - 要更新的元素
-     * @param {string[]} removeClasses - 要移除的类名数组
-     * @param {string[]} addClasses - 要添加的类名数组
-     */
-    updateClassList(element, removeClasses, addClasses) {
-        if (!element) {
-            console.error('F1rstDan [updateClassList] element is null');
-            return;
-        }
-        const normalizeClasses = (classes) => {
-            return Array.isArray(classes) ? classes : classes.split(' ');
-        };
-        const normalizedRemoveClasses = normalizeClasses(removeClasses);
-        const normalizedAddClasses = normalizeClasses(addClasses);
-
-        element.classList.remove(...normalizedRemoveClasses);
-        element.classList.add(...normalizedAddClasses);
-    }
-    /**
-     * 移动元素到新的父元素，并更新类名和内容
-     * @param {HTMLElement} element - 要移动的元素
-     * @param {HTMLElement} newParent - 新的父元素
-     * @param {string} className - 新的类名
-     * @param {string} innerHTML - 新的内容
-     */
-    moveElement(element, newParent, className, innerHTML = '') {
-        if (!element) {
-            console.error('F1rstDan [moveElement] element is null');
-            return;
-        }
-        if (element.parentNode && newParent) {
-            element.parentNode.removeChild(element);
-            newParent.appendChild(element);
-        }
-        if (className) element.className = className;
-        if (innerHTML) element.innerHTML = innerHTML;
-    }
-    /**
-     * 切换元素的可见性
-     * @param {HTMLElement} element - 要切换的元素
-     * @param {boolean} isVisible - 是否可见
-     */
-    toggleVisibility(element, isVisible) {
-        if (!element) {
-            console.error('F1rstDan [toggleVisibility] element is null');
-            return;
-        }
-        if (isVisible) {
-            element.classList.remove('hidden');
-        } else {
-            element.classList.add('hidden');
-        }
-    }
-
-    /**
-     * 刷新维护费显示
-     * 如果维护费元素不存在，则创建到合适的位置
-     */
-    refreshMaintenance() {
-        // if (!this.isDisplayMaintenance) return;
-        // 如果维护费元素不存在，则创建
-        this.createCustomElement('maintenanceElement', 'span', 'flex text-xs text-negative-light font-bold px-1 hidden ', this.item.secondaryDetailsElement);
-
-        // 获取维护费数据
-        const element = this.item.Root;
-        const type = element.getAttribute('data-type');
-        const category = element.getAttribute('data-category');
-        let maintenanceData;
-
-        if (type && category !== ProductionPanelCategory.PROJECTS) {
-            // 获取维护费
-            if (category === ProductionPanelCategory.UNITS) {
-                // 对于单位，从Units表获取维护费
-                const unitDef = GameInfo.Units.lookup(type);
-                if (unitDef && unitDef.Maintenance > 0) {
-                    maintenanceData = [{
-                        YieldType: 'YIELD_GOLD',
-                        Amount: unitDef.Maintenance
-                    }];
-                } else {
-                    element.removeAttribute('data-maintenance-data');
-                }
-            } else {
-                // 对于建筑等，从Constructible_Maintenances表获取维护费
-                const maintenances = Database.query('gameplay', 
-                    'select YieldType, Amount from Constructible_Maintenances where ConstructibleType = ?', 
-                    type
-                );
-                if (maintenances?.length > 0) {
-                    const validMaintenances = maintenances.filter(m => m.Amount > 0);
-                    if (validMaintenances.length > 0) {
-                        maintenanceData = validMaintenances;
-                    } else {
-                        element.removeAttribute('data-maintenance-data');
-                    }
-                } else {
-                    element.removeAttribute('data-maintenance-data');
-                }
-            }
-        }
-        // 检查维护费数据是否发生变化,如果没有变化则不刷新
-        if ( JSON.stringify(maintenanceData) == element.getAttribute('data-maintenance-data') ) {
-            return;
-        }
-
-        // 更新维护费数据属性
-        element.dataset.maintenanceData = JSON.stringify(maintenanceData);
-        // 获取维护费数据
-        // const maintenanceData = this.item.Root.getAttribute('data-maintenance-data');
-        if (maintenanceData) {
-            try {
-                // 清空现有内容
-                this.item.maintenanceElement.innerHTML = '';
-                // 添加维护费条目
-                maintenanceData.forEach(maintenance => {
-                    const maintenanceEntry = document.createElement('div');
-                    maintenanceEntry.className = 'flex items-center';
-                    // 创建图标
-                    const icon = document.createElement('fxs-icon');
-                    icon.setAttribute('data-icon-id', maintenance.YieldType);
-                    icon.setAttribute('data-icon-context', 'YIELD');
-                    icon.classList.add('size-6');
-                    maintenanceEntry.appendChild(icon);
-                    // 创建数值
-                    const amount = document.createElement('div');
-                    amount.textContent = `-${maintenance.Amount}`;
-                    maintenanceEntry.appendChild(amount);
-                    // 添加到维护费容器
-                    this.item.maintenanceElement.appendChild(maintenanceEntry);
-                });
-                // 显示维护费容器
-                this.item.maintenanceElement.classList.remove('hidden');
-            } catch (error) {
-                // console.error('F1rstDan Error parsing maintenance data:', error);
-                this.item.maintenanceElement.classList.add('hidden');
-            }
-        } else { // 没有维护费数据，隐藏容器
-            this.item.maintenanceElement.classList.add('hidden');
-        }
-    }
-    
-    /**
-     * 刷新生产力花费显示
-     * 如果生产力花费元素不存在，则创建到合适的位置
-     */
-    refreshProductionCost() {
-        // if (!this.isDisplayProductionCost) return;
-        // 如果生产力花费容器不存在，则创建
-        if (!this.item.productionCostContainer) {
-            // 生产力花费容器
-            this.createCustomElement('productionCostContainer', 'span', 'flex items-center mx-3 production-chooser-tooltip__subtext-bg rounded hidden', this.item.costContainer);
-            this.createCustomElement('productionCostAmount', 'span', 'text-xs text-primary-1 leading-tight ml-2 font-title', this.item.productionCostContainer);
-            this.createCustomElement('productionIcon', 'fxs-icon', 'size-5 mx-1', this.item.productionCostContainer);
-            this.item.productionIcon.setAttribute('data-icon-id', 'YIELD_PRODUCTION');
-            this.item.productionIcon.setAttribute('data-icon-context', 'YIELD');
-            // 调整位置，让 '生产力花费' 在 '成本' 之前
+        if (this.item.costContainer) {
             if (this.item.costContainer.firstChild) {
-                this.item.costContainer.insertBefore(this.item.productionCostContainer, this.item.costAmountElement);
+                this.item.costContainer.insertBefore(this.item.productionCostContainer, this.item.costContainer.firstChild);
             } else {
                 this.item.costContainer.appendChild(this.item.productionCostContainer);
             }
         }
-        // 获取生产力花费，并更新显示
+
+        // 5. 最终DOM结构检查与修复
+        this.ensureDOMStructure();
+    }
+
+    /**
+     * 确保DOM元素顺序正确
+     * 顺序: Icon -> MainInfo -> RightInfo
+     */
+    ensureDOMStructure() {
+        if (!this.item.container) return;
+
+        const { container, iconElement, mainInfoArea, rightInfoArea } = this.item;
+
+        // 确保图标在最前
+        if (iconElement && !container.contains(iconElement)) {
+            container.insertBefore(iconElement, container.firstChild);
+        }
+
+        // 确保主要信息区在图标之后
+        if (mainInfoArea && iconElement && iconElement.nextSibling !== mainInfoArea) {
+            container.insertBefore(mainInfoArea, iconElement.nextSibling);
+        }
+
+        // 确保右侧信息区在最后
+        if (rightInfoArea && !container.contains(rightInfoArea)) {
+            container.appendChild(rightInfoArea);
+        }
+    }
+
+    /**
+     * 更新/初始化快速购买按钮
+     */
+    updateQuickBuyButton() {
+        // 城镇不显示购买按钮，避免闪烁和性能浪费
+        const cityID = UI.Player.getHeadSelectedCity();
+        if (cityID) {
+            const city = Cities.get(cityID);
+            if (city?.isTown) return;
+        }
+
+        const quickBuyButton = this.createCustomElement('quickBuyButton', 'quick-buy-item', '', this.item.Root);
+        // 确保按钮在Root的最后
+        if (this.item.Root.lastChild !== quickBuyButton) {
+             this.item.Root.appendChild(quickBuyButton);
+        }
+        
+        UpdateQuickBuyItem(quickBuyButton);
+    }
+
+    /**
+     * 刷新维护费显示
+     */
+    refreshMaintenance() {
         const element = this.item.Root;
         const type = element.getAttribute('data-type');
         const category = element.getAttribute('data-category');
+        const isUnit = category === ProductionPanelCategory.UNITS;
+
+        // 1. 获取目标父容器
+        // 单位 -> secondaryDetailsElement
+        // 建筑 -> itemBaseYieldsElement (优先) 或 alternateYieldElement
+        const targetParent = isUnit 
+            ? this.item.secondaryDetailsElement 
+            : (this.item.itemBaseYieldsElement || this.item.alternateYieldElement);
+
+        if (!targetParent) return;
+
+        // 2. 确保维护费容器存在
+        if (!this.item.maintenanceElement) {
+             this.item.maintenanceElement = document.createElement('span');
+             this.item.maintenanceElement.className = 'flex px-1 hidden';
+             this.item.maintenanceElement.style.setProperty("color", "#ffc8c8");
+        }
+
+        // 3. 获取维护费数据
+        const maintenanceData = this._getMaintenanceData(type, category);
+        
+        // 4. 检查是否需要更新 (数据未变且DOM正常则跳过)
+        const dataStr = JSON.stringify(maintenanceData);
+        const prevDataStr = element.getAttribute('data-maintenance-data');
+        const isDomMissing = maintenanceData && !targetParent.contains(this.item.maintenanceElement);
+        
+        if (dataStr === prevDataStr && !isDomMissing) return;
+
+        element.dataset.maintenanceData = dataStr;
+
+        // 5. 渲染维护费
+        if (maintenanceData) {
+            this._renderMaintenance(maintenanceData, isUnit, targetParent);
+        } else {
+            this.item.maintenanceElement.classList.add('hidden');
+        }
+    }
+
+    /**
+     * 获取维护费数据
+     */
+    _getMaintenanceData(type, category) {
+        if (!type || category === ProductionPanelCategory.PROJECTS) return null;
+
+        if (category === ProductionPanelCategory.UNITS) {
+            const unitDef = GameInfo.Units.lookup(type);
+            return (unitDef?.Maintenance > 0) 
+                ? [{ YieldType: 'YIELD_GOLD', Amount: unitDef.Maintenance }] 
+                : null;
+        } else {
+            const maintenances = Database.query('gameplay', 
+                'select YieldType, Amount from Constructible_Maintenances where ConstructibleType = ?', 
+                type
+            );
+            const validMaintenances = maintenances?.filter(m => m.Amount > 0);
+            return (validMaintenances?.length > 0) ? validMaintenances : null;
+        }
+    }
+
+    /**
+     * 渲染维护费DOM
+     */
+    _renderMaintenance(data, isUnit, targetParent) {
+        try {
+            this.item.maintenanceElement.innerHTML = '';
+            
+            data.forEach(m => {
+                const entry = document.createElement('div');
+                entry.className = 'flex items-center';
+                
+                const amount = document.createElement('div');
+                amount.textContent = `-${m.Amount}`;
+                
+                const icon = document.createElement('fxs-icon');
+                icon.setAttribute('data-icon-id', m.YieldType);
+                icon.setAttribute('data-icon-context', 'YIELD');
+                icon.classList.add('size-6');
+
+                if (isUnit) {
+                    entry.append(icon, amount);
+                } else {
+                    entry.append(amount, icon);
+                }
+                
+                this.item.maintenanceElement.appendChild(entry);
+            });
+            
+            this.item.maintenanceElement.classList.remove('hidden');
+
+            // 挂载到DOM
+            if (!targetParent.contains(this.item.maintenanceElement)) {
+                targetParent.appendChild(this.item.maintenanceElement);
+            }
+            
+            // 确保父级可见
+            if (targetParent.classList.contains('hidden')) {
+                targetParent.classList.remove('hidden');
+            }
+            // 特殊处理建筑的 alternateYieldElement
+            if (!isUnit && this.item.alternateYieldElement?.classList.contains('hidden')) {
+                this.item.alternateYieldElement.classList.remove('hidden');
+            }
+
+        } catch (error) {
+            console.error('F1rstDan Error rendering maintenance:', error);
+            this.item.maintenanceElement.classList.add('hidden');
+        }
+    }
+
+    /**
+     * 刷新生产力花费显示
+     */
+    refreshProductionCost() {
+        // 1. 确保容器存在 (如果是首次且未通过layout创建，例如layout未开启但开启了花费显示)
+        if (!this.item.productionCostContainer) {
+             this.createCustomElement('productionCostContainer', 'span', 'flex items-center mx-3 production-chooser-tooltip__subtext-bg rounded hidden');
+             this.createCustomElement('productionCostAmount', 'span', 'text-xs text-primary-1 leading-tight ml-2 font-title', this.item.productionCostContainer);
+             this.createCustomElement('productionIcon', 'fxs-icon', 'size-5 mx-1', this.item.productionCostContainer);
+             this.item.productionIcon.setAttribute('data-icon-id', 'YIELD_PRODUCTION');
+             this.item.productionIcon.setAttribute('data-icon-context', 'YIELD');
+
+             if (this.item.costContainer) {
+                if (this.item.costContainer.firstChild) {
+                    this.item.costContainer.insertBefore(this.item.productionCostContainer, this.item.costContainer.firstChild);
+                } else {
+                    this.item.costContainer.appendChild(this.item.productionCostContainer);
+                }
+             }
+        }
+
+        const element = this.item.Root;
+        const type = element.getAttribute('data-type');
+        const category = element.getAttribute('data-category');
+        const isPurchase = this.item.Root.getAttribute('data-is-purchase') === 'true';
+
+        // 2. 判断是否显示
+        if (isPurchase || category === ProductionPanelCategory.PROJECTS) {
+            if (this.item.productionCostContainer) {
+                this.item.productionCostContainer.classList.add('hidden');
+            }
+            return;
+        }
+
+        // 3. 获取并显示花费
         const cityID = UI.Player.getHeadSelectedCity();
         const city = Cities.get(cityID);
-        let productionCost;
-        // 判断是否应该显示生产力花费，非购买模式 && 类别不是项目
-        const shouldShow = !this.item.isPurchase && category !== ProductionPanelCategory.PROJECTS;
-        if (shouldShow) {
-            // 获取生产力花费，单位和建筑获取方式不同
-            if (category === ProductionPanelCategory.UNITS) {
-                productionCost = city.Production?.getUnitProductionCost(type);
-            } else {
-                // 快速修复 1.1.1 版本引起的 BUG
-                // productionCost = city.Production?.getConstructibleProductionCost(type, FeatureTypes.NO_FEATURE, ResourceTypes.NO_RESOURCE);
-                productionCost = city.Production?.getConstructibleProductionCost(type, FeatureTypes.NO_FEATURE, false);
-            }
-            // 更新数据，确保有效的生产力花费
-            if (productionCost !== undefined && productionCost > 0) {
-                // 更新数据属性
-                element.dataset.productionCost = productionCost.toString();
-                // 显示生产力花费
-                this.item.productionCostAmount.textContent = productionCost;
-                this.item.productionCostContainer.classList.remove('hidden');
-            } else {
-                // 隐藏生产力花费
-                this.item.productionCostContainer.classList.add('hidden');
-                element.removeAttribute('data-production-cost');
-            }
+        const cost = this._getProductionCost(city, type, category);
+
+        if (cost !== undefined && cost > 0) {
+            element.dataset.productionCost = cost.toString();
+            this.item.productionCostAmount.textContent = cost;
+            this.item.productionCostContainer.classList.remove('hidden');
         } else {
-            // 隐藏生产力花费
             this.item.productionCostContainer.classList.add('hidden');
+            element.removeAttribute('data-production-cost');
         }
-        // console.error('F1rstDan parsing production cost:', productionCost);
     }
-    
+
+    _getProductionCost(city, type, category) {
+        if (!city?.Production) return 0;
+        
+        if (category === ProductionPanelCategory.UNITS) {
+            return city.Production.getUnitProductionCost(type);
+        }
+        // 建筑：修正 1.1.1 版本 BUG
+        return city.Production.getConstructibleProductionCost(type, FeatureTypes.NO_FEATURE, false);
+    }
+
     /**
      * 处理属性变化
-     * 这个比 afterAttach() 先执行
-     * @param {string} name - 变化的属性名
-     * @param {*} oldValue - 变化前的值
-     * @param {*} newValue - 变化后的值
      */
     handleAttributeChanged(name, oldValue, newValue) {
-        // console.error('F1rstDan handleAttributeChanged GO');
+        if (newValue === oldValue) return;
+
         switch (name) {
             case 'data-cost':
-                // console.error('F1rstDan handleAttributeChanged case data-cost');
-                // 如果成本变动，更新 维护费，生产成本
-                if (newValue != oldValue && newValue != null) {
+                // 成本变动时，刷新相关显示
+                if (newValue != null) {
                     if (this.isDisplayMaintenance) this.refreshMaintenance();
                     if (this.isDisplayProductionCost) this.refreshProductionCost();
-                    if (this.item.quickBuyButton && this.item.Root.dataset) {
+                    if (this.item.quickBuyButton) {
                         UpdateQuickBuyItem(this.item.quickBuyButton);
                     }
                 }
                 break;
-            // case 'data-error':
-            //     if (newValue && this.item.quickBuyButton) {
-            //         UpdateQuickBuyItem(this.item.quickBuyButton);
-            //         // console.error('F1rstDan handleAttributeChanged case disabled data-error');
-            //     }
-            //     break;
-            // case 'data-maintenance-data':
-            //     // 维护费数据变化，更新显示
-            //     if (this.isDisplayMaintenance) this.refreshMaintenance();
-            //     break;
-                
-            // case 'data-production-cost':
-            //     // 生产力花费变化，更新显示
-            //     if (this.isDisplayProductionCost) this.refreshProductionCost();
-            //     break;
-                
-            // case 'data-is-purchase':
-            //     // 购买模式变化，更新生产力花费显示(购买模式下隐藏)
-            //     if (this.isDisplayProductionCost) this.refreshProductionCost();
-            //     break;
-                
+
             case 'data-is-ageless':
-                // 无时代限制状态变化
                 if (this.item.agelessContainer && this.isApplyLayout) {
-                    // 确保使用正确的值比较，'true'是字符串
-                    const isAgeless = newValue === 'true';
-                    if (isAgeless) {
-                        this.item.agelessContainer.classList.remove('hidden');
-                    } else {
-                        this.item.agelessContainer.classList.add('hidden');
-                    }
+                    this.toggleVisibility(this.item.agelessContainer, newValue === 'true');
                 }
                 break;
+
             case 'data-secondary-details': 
                 if (this.item.secondaryDetailsElement && this.isApplyLayout) {
                     if (newValue) {
                         this.item.secondaryDetailsElement.innerHTML = newValue;
                         this.item.secondaryDetailsElement.classList.remove('hidden');
-                    }
-                    else {
+                    } else {
                         this.item.secondaryDetailsElement.classList.add('hidden');
                     }
                 }
@@ -533,13 +443,65 @@ export class DanProductionItemDecorator {
         }
     }
 
+    // #endregion
 
+    // #region DOM 辅助方法
+
+    /**
+     * 创建或获取自定义元素
+     */
+    createCustomElement(propertyName, tagName, className, parentElement) {
+        if (!this.item) return null;
+
+        if (!this.item[propertyName]) {
+            this.item[propertyName] = document.createElement(tagName);
+            if (className) this.item[propertyName].className = className;
+        }
+
+        if (parentElement && !parentElement.contains(this.item[propertyName])) {
+            parentElement.appendChild(this.item[propertyName]);
+        }
+        return this.item[propertyName];
+    }
+
+    /**
+     * 更新元素的类列表
+     */
+    updateClassList(element, removeClasses, addClasses) {
+        if (!element) return;
+        
+        const toArray = (cls) => Array.isArray(cls) ? cls : (cls ? cls.split(' ') : []);
+        
+        const remove = toArray(removeClasses);
+        const add = toArray(addClasses);
+
+        if (remove.length) element.classList.remove(...remove);
+        if (add.length) element.classList.add(...add);
+    }
+
+    /**
+     * 移动元素并更新
+     */
+    moveElement(element, newParent, className, innerHTML) {
+        if (!element) return;
+
+        if (newParent && element.parentNode !== newParent) {
+            newParent.appendChild(element);
+        }
+        
+        if (className !== undefined) element.className = className;
+        if (innerHTML !== undefined) element.innerHTML = innerHTML;
+    }
+
+    /**
+     * 切换可见性
+     */
+    toggleVisibility(element, isVisible) {
+        if (!element) return;
+        isVisible ? element.classList.remove('hidden') : element.classList.add('hidden');
+    }
+    // #endregion
 }
 
-
-// 当游戏引擎准备好时初始化
-engine.whenReady.then(() => {
-    console.log('F1rstDan\'s Cool UI: Registered Production Item Decorator');
-    // 注册装饰器
-    Controls.decorate('production-chooser-item', (component) => new DanProductionItemDecorator(component));
-});
+// 注册装饰器
+Controls.decorate('production-chooser-item', (component) => new DanProductionItemDecorator(component));

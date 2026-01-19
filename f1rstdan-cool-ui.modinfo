@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Mod id="f1rstdan-cool-ui" version="1.9.3"
+<Mod id="f1rstdan-cool-ui" version="1.9.4"
     xmlns="ModInfo">
     <Properties>
         <Name>LOC_MOD_F1RSTDAN_COOL_UI_NAME</Name>
-        <Version>1.9.3</Version>
+        <Version>1.9.4</Version>
         <Description>LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION</Description>
         <Authors>F1rstDan</Authors>
-        <URL>https://forums.civfanatics.com/resources/31961/</URL>
+        <URL>https://github.com/F1rstDan/Civ7_F1rstDan_Cool_UI</URL>
         <Package>Mod</Package>
         <AffectsSavedGames>0</AffectsSavedGames>
     </Properties>

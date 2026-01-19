@@ -6,6 +6,7 @@ import { P as ProductionPanelCategory, h as Construct } from '/base-standard/ui/
 import { findItemForBuy, findItem } from './dan-panel-pc-decorator.js';
 import { ProductionChooserScreen } from '/base-standard/ui/production-chooser/panel-production-chooser.js';
 
+
 // 创建快速购买按钮元素
 export const CreateQuickBuyItem = () => {
     const item = document.createElement('quick-buy-item');
@@ -14,170 +15,335 @@ export const CreateQuickBuyItem = () => {
     return item;
 };
 
-// 缓存上次更新的数据以避免不必要的DOM更新
-let updateCache = new Map();
-const CACHE_TIMEOUT = 1000; // 1秒缓存超时
+// 检查玩家是否解锁了某个节点（市政/科技）
+const IsNodeUnlocked = (nodeType, playerId) => {
+    if (!nodeType || typeof Game === 'undefined') return false;
+    
+    // 获取节点状态
+    const nodeState = Game.ProgressionTrees.getNodeState(playerId, nodeType);
+    // 尝试获取完成状态的枚举值，如果获取不到则默认使用 3
+    // 枚举参考:
+    // .NODE_STATE_CLOSED = 0 (锁定)
+    // .NODE_STATE_OPEN = 1 (开放可研究)
+    // .NODE_STATE_IN_PROGRESS = 2 (研究中)
+    // .NODE_STATE_FULLY_UNLOCKED = 3 (已完成)
+    const COMPLETED_STATE = (typeof ProgressionTreeNodeState !== 'undefined' && ProgressionTreeNodeState.NODE_STATE_FULLY_UNLOCKED) 
+        ? ProgressionTreeNodeState.NODE_STATE_FULLY_UNLOCKED 
+        : 3;
 
-// 按需清理过期缓存，避免定时器卡顿
-function cleanUpdateCache() {
-    const now = Date.now();
-    for (const [key, value] of updateCache.entries()) {
-        if (now - value.timestamp > CACHE_TIMEOUT * 5) { // 5倍超时时间后清理
-            updateCache.delete(key);
+    return nodeState >= COMPLETED_STATE;
+};
+
+// ==========================================
+// 1. 数据访问层 (Data Access Layer, DAL)
+// 职责：封装所有与官方游戏数据交互的函数（读取、监听）
+// ==========================================
+const QuickBuyDAL = {
+    /**
+     * 获取当前选中的城市
+     * @returns {City|null} 城市对象
+     */
+    getSelectedCity: () => {
+        const cityID = UI.Player.getHeadSelectedCity();
+        return cityID ? Cities.get(cityID) : null;
+    },
+
+    /**
+     * 获取单位的生产力成本
+     * @param {City} city 城市对象
+     * @param {string} type 单位类型
+     * @returns {number} 生产力成本
+     */
+    getUnitProductionCost: (city, type) => {
+        return city?.Production?.getUnitProductionCost(type) ?? -1;
+    },
+
+    /**
+     * 获取建筑/区域的生产力成本
+     * @param {City} city 城市对象
+     * @param {string} type 建筑类型
+     * @returns {number} 生产力成本
+     */
+    getConstructibleProductionCost: (city, type) => {
+        // 快速修复 1.1.1 版本引起的 BUG，使用 false 替代 ResourceTypes.NO_RESOURCE
+        return city?.Production?.getConstructibleProductionCost(type, FeatureTypes.NO_FEATURE, false) ?? -1;
+    },
+
+    /**
+     * 获取单位的基础生产力成本（用于计算折扣）
+     * @param {string} type 单位类型
+     * @returns {number} 基础成本
+     */
+    getUnitBaseCost: (type) => {
+        // 优化：使用find而不是filter以提高性能
+        const unitCost = GameInfo.Unit_Costs.find(cost => cost.UnitType === type && cost.YieldType === 'YIELD_PRODUCTION');
+        return unitCost ? unitCost.Cost : 0;
+    },
+
+    /**
+     * 获取建筑的基础生产力成本
+     * @param {string} type 建筑类型
+     * @returns {number} 基础成本
+     */
+    getConstructibleBaseCost: (type) => {
+        const constructible = GameInfo.Constructibles.lookup(type);
+        return (constructible && constructible.Cost > 0) ? constructible.Cost : 0;
+    },
+
+    /**
+     * 获取购买模式下的项目数据
+     * @param {string} category 类别
+     * @param {string} type 类型
+     * @returns {Object|null} 项目数据
+     */
+    getItemForBuy: (category, type) => {
+        return findItemForBuy(category, type);
+    },
+
+    /**
+     * 获取普通模式下的项目数据
+     * @param {string} category 类别
+     * @param {string} type 类型
+     * @returns {Object|null} 项目数据
+     */
+    getItem: (category, type) => {
+        return findItem(category, type);
+    }
+};
+
+// ==========================================
+// 2. UI定位层 (UI Locating Layer, ULL)
+// 职责：封装所有“查找/操作DOM”的逻辑，防止undefined错误
+// ==========================================
+const QuickBuyULL = {
+    /**
+     * 获取按钮的上下文信息（父元素及其数据）
+     * @param {HTMLElement} element 按钮元素
+     * @returns {Object|null} 上下文对象或null
+     */
+    getContext: (element) => {
+        if (!element?.parentElement) {
+            console.error('F1rstDan UpdateQuickBuyItem: element.parentElement is undefined');
+            return null;
+        }
+        
+        // 检查父元素是否有必要的数据
+        // 奇怪，勾上“查看隐藏项” 就会弹出很多 undefined，这里做防御性编程
+        if (!element.parentElement.dataset?.type) {
+            return null;
+        }
+
+        return {
+            element: element,
+            parentElement: element.parentElement,
+            parentData: element.parentElement.dataset
+        };
+    },
+
+    /**
+     * 设置元素的可见性
+     * @param {HTMLElement} element 元素
+     * @param {boolean} isVisible 是否可见
+     */
+    setVisible: (element, isVisible) => {
+        element.classList.toggle('hidden', !isVisible);
+    },
+
+    /**
+     * 设置元素的禁用状态
+     * @param {HTMLElement} element 元素
+     * @param {boolean} isDisabled 是否禁用
+     */
+    setDisabled: (element, isDisabled) => {
+        if (isDisabled) {
+            element.setAttribute('disabled', 'true');
+        } else {
+            // 移除属性比设置为false更好，但为了兼容原逻辑保留 converting to string
+            element.setAttribute('disabled', 'false'); 
+            // 注意：原逻辑是 (!!data.disabled).toString()，即 "true" 或 "false"
+        }
+    },
+
+    /**
+     * 批量更新元素的dataset
+     * @param {HTMLElement} element 元素
+     * @param {Object} dataKV 键值对数据
+     */
+    updateDataset: (element, dataKV) => {
+        for (const [key, value] of Object.entries(dataKV)) {
+            // 只在值发生变化时更新，减少DOM操作
+            const strValue = value === undefined || value === null ? '' : value.toString();
+            if (element.dataset[key] !== strValue) {
+                element.dataset[key] = strValue;
+            }
         }
     }
-}
+};
 
-// 更新快速购买按钮的数据
-export const UpdateQuickBuyItem = (element) => {
-    // 尝试从DOM中查找原始生产项目元素。父元素，JSON.stringify(itemData.dataset)
-    // const itemData = document.querySelector(`production-chooser-item[data-type="${type}"][data-category="${category}"]`);
-    if (!element?.parentElement) {
-        console.error('F1rstDan UpdateQuickBuyItem: element.parentElement is undefined');
-        return;
-    } else if (!element.parentElement.dataset?.type) {
-        // 奇怪，勾上“查看隐藏项” 就会弹出很多这个 30+
-        // element.parentElement 打印是 [Object Object] 。无法JSON.stringify(element.parentElement)
-        // element.parentElement.dataset 打印出来是 空白
-        // JSON.stringify(element.parentElement.dataset)打印出来是 “{}”
-        // console.error('F1rstDan UpdateQuickBuyItem: element.parentElement is undefined', element.parentElement);
-        return;
-    }
-    // 如果是城镇，直接隐藏按钮并退出。减少计算
-    const city = Cities.get(UI.Player.getHeadSelectedCity());
-    if (city?.isTown) {
-        element.classList.toggle('hidden', true);
-        return;
-    }
-    // 从父元素获取必要的数据
-    // const parentElement = element.parentElement;
-    const parentData = element.parentElement.dataset;
-    const category = parentData.category;
-    const type = parentData.type;
-    
-    // 创建缓存键
-    const cacheKey = `${category}_${type}_${city?.id}`;
-    const now = Date.now();
+// ==========================================
+// 3. 数据处理层 (Data Processing Layer, DPL)
+// 职责：业务逻辑计算、缓存管理、数据转换
+// ==========================================
+const QuickBuyDPL = {
+    /**
+     * 处理并生成渲染数据 (轻量级版本 - 仅用于列表显示)
+     * @param {Object} context ULL提供的上下文
+     * @returns {Object} 渲染指令数据
+     */
+    process: (context) => {
+        const { element, parentData } = context;
+        const category = parentData.category;
+        const type = parentData.type;
+        const isPurchaseMode = parentData.isPurchase === 'true';
+        
+        // 1. 基础有效性检查
+        const city = QuickBuyDAL.getSelectedCity();
 
-    // 清理过期缓存，避免 setInterval 卡顿
-    cleanUpdateCache();
-
-    // 检查缓存是否有效
-    if (updateCache.has(cacheKey)) {
-        const cached = updateCache.get(cacheKey);
-        if (now - cached.timestamp < CACHE_TIMEOUT) {
-            // 如果缓存未过期，直接返回
-            return;
+        // 2. 规则检查
+        // 购买模式下一律不显示快速购买
+        if (isPurchaseMode) {
+            return { action: 'HIDE' };
         }
-    }
-    
-    // 如果在购买模式下，直接隐藏按钮并退出。减少计算
-    // 如果是奇观或项目，直接排除在外。
-    const isPurchaseMode = parentData.isPurchase === 'true';
-    const isExclude = category === ProductionPanelCategory.WONDERS || 
-                      category === ProductionPanelCategory.PROJECTS ;
-    if (isExclude) {
-        element.classList.toggle('hidden', 'true');
-        return;
-    } else {
-        element.classList.toggle('hidden', isPurchaseMode);
-    }
-    // console.error('F1rstDan UpdateQuickBuyItem runing');
-    // 获取 购买模式下的项目数据 （从 'dan-panel-pc-decorator.js' 拿面板上的数据）
-    // 一旦被禁用，findItemForBuy就不会有数据。（除非玩家开启“查看隐藏项”）
-    let data = findItemForBuy(category, type);
-    let isDisabled = false;
-    if (!data) {
-        data = findItem(category, type);
+
+        // 如果是城镇，不显示快速购买
+        if (city?.isTown) {
+            return { action: 'HIDE' }; // 城镇无需缓存，直接隐藏
+        }
+
+        // 项目（PROJECTS）一律不显示快速购买
+        if (category === ProductionPanelCategory.PROJECTS) {
+             return { action: 'HIDE' };
+        }
+
+        // 奇观（WONDERS）默认不显示，除非满足特定条件
+        if (category === ProductionPanelCategory.WONDERS) {
+            const MUGHAL_GARDENS_NODE = "NODE_CIVIC_MO_MUGHAL_GARDENS_OF_PARADISE";
+            // 只有解锁了“天堂花园”市政才显示奇观购买按钮 (Mughal莫卧儿帝国的市政)
+            if (!IsNodeUnlocked(MUGHAL_GARDENS_NODE, city.owner)) {
+                return { action: 'HIDE' };
+            }
+        }
+
+        // 3. 获取项目数据 (用于获取金币成本)
+        let data = QuickBuyDAL.getItemForBuy(category, type);
+        let isDisabled = false;
+        
+        // 如果购买列表里没找到（可能是因为被禁用了），尝试在普通列表找
         if (!data) {
-            // 都没数据则退出
-            console.error('F1rstDan UpdateQuickBuyItem: findItem is undefined',JSON.stringify(parentData.name));
-            return;
+            data = QuickBuyDAL.getItem(category, type);
+            if (!data) {
+                // 都没数据，可能是有问题的条目
+                // console.error('F1rstDan UpdateQuickBuyItem: findItem is undefined', parentData.name);
+                // 找不到数据时不报错，直接SKIP或HIDE，避免刷屏
+                return { action: 'SKIP' }; 
+            }
+            isDisabled = true; // 既然买不了，那就禁用
+        } else {
+            isDisabled = !!data.disabled;
         }
-        isDisabled = true;
-    }
-    // 如果findItemForBuy没有数据，则必然是禁用状态。否则根据数据判断是否禁用（开启“查看隐藏项”情况下）。
-    if (isDisabled) {
-        element.setAttribute('disabled', 'true');
-    } else {
-        element.setAttribute('disabled', (!!data.disabled).toString());
-    }
 
-    // 只有在数据发生变化时才更新DOM属性
-    if (element.dataset.name !== data.name) element.dataset.name = data.name;
-    if (element.dataset.type !== data.type) element.dataset.type = data.type;
-    if (element.dataset.category !== data.category) element.dataset.category = data.category;
-    if (element.dataset.isPurchase !== 'true') element.dataset.isPurchase = 'true';
-    if (element.dataset.cost !== data.cost.toString()) element.dataset.cost = data.cost.toString();
-    if (element.dataset.turns !== data.turns.toString()) element.dataset.turns = data.turns.toString();
-    if (data.error && element.dataset.error !== data.error) element.dataset.error = data.error;
+        // 4. 返回渲染数据 (仅包含列表显示所需的最少数据)
+        // 移除了 productionCost, baseProductionCost 等昂贵计算
+        return {
+            action: 'RENDER',
+            isDisabled,
+            dataset: {
+                name: data.name,
+                type: data.type,
+                category: data.category,
+                isPurchase: 'true',
+                cost: data.cost,
+                turns: data.turns,
+                error: data.error || '',
+                // 标记 Tooltip 数据尚未加载
+                tooltipLoaded: 'false'
+            }
+        };
+    },
 
-    // 如果 生产项(父元素) 开启了显示生产力成本，直接获取。不然就自己计算
-    if (!parentData.productionCost) {
-        // 获取生产力花费，单位和建筑获取方式不同
+    /**
+     * 获取 Tooltip 所需的详细数据 (昂贵计算 - 延迟加载)
+     * @param {string} category 类别
+     * @param {string} type 类型
+     * @param {number} currentCost 当前金币成本
+     * @returns {Object} 包含详细成本和折扣率的数据对象
+     */
+    getTooltipData: (category, type, currentCost) => {
+        const city = QuickBuyDAL.getSelectedCity();
+        if (!city) return {};
+
+        // 1. 计算生产力成本
         let productionCost = -1;
-        if (data.category === ProductionPanelCategory.UNITS) {
-            productionCost = city.Production?.getUnitProductionCost(data.type);
+        if (category === ProductionPanelCategory.UNITS) {
+            productionCost = QuickBuyDAL.getUnitProductionCost(city, type);
         } else {
-            // 快速修复 1.1.1 版本引起的 BUG
-            // productionCost = city.Production?.getConstructibleProductionCost(data.type, FeatureTypes.NO_FEATURE, ResourceTypes.NO_RESOURCE);
-            productionCost = city.Production?.getConstructibleProductionCost(data.type, FeatureTypes.NO_FEATURE, false);
+            productionCost = QuickBuyDAL.getConstructibleProductionCost(city, type);
         }
-        if (element.dataset.productionCost !== productionCost.toString()) {
-            element.dataset.productionCost = productionCost.toString();
-        }
-        // console.error('F1rstDan UpdateQuickBuyItem: parentData.productionCost is undefined',productionCost.toString());
-    } else {
-        if (element.dataset.productionCost !== parentData.productionCost) {
-            element.dataset.productionCost = parentData.productionCost;
-        }
-        // console.error('F1rstDan UpdateQuickBuyItem: parentData.productionCost YSE',parentData.productionCost);
-    }
-    
-    // 获取基础成本值，计算折扣价
-    // let baseProductionCost = -1;
-    let baseProductionCost = element.dataset.baseProductionCost;
-    if (!baseProductionCost) {
-        if (data.category === ProductionPanelCategory.UNITS) {
-            // 对于单位，从Unit_Costs表获取基础成本
-            // 优化：使用find而不是filter以提高性能
-            const unitCost = GameInfo.Unit_Costs.find(cost => cost.UnitType === data.type && cost.YieldType === 'YIELD_PRODUCTION');
-            if (unitCost) {
-                baseProductionCost = unitCost.Cost;
-            }
+
+        // 2. 计算基础成本
+        let baseProductionCost = 0;
+        if (category === ProductionPanelCategory.UNITS) {
+            baseProductionCost = QuickBuyDAL.getUnitBaseCost(type);
         } else {
-            // 对于建筑，直接从Constructibles表获取Cost属性
-            const constructible = GameInfo.Constructibles.lookup(data.type);
-            if (constructible && constructible.Cost > 0) {
-                baseProductionCost = constructible.Cost;
-            }
+            baseProductionCost = QuickBuyDAL.getConstructibleBaseCost(type);
         }
-        if (baseProductionCost) {
-            if (element.dataset.baseProductionCost !== baseProductionCost.toString()) {
-                element.dataset.baseProductionCost = baseProductionCost.toString();
-            }
-            const baseCost = (baseProductionCost * 4).toString();
-            if (element.dataset.baseCost !== baseCost) {
-                element.dataset.baseCost = baseCost; // 金币成本是生产力基础成本 * 4
-            }
+
+        // 3. 计算衍生数据
+        const baseCost = baseProductionCost * 4; // 金币成本是生产力基础成本 * 4
+        let productionRate = 0;
+        let goldRate = 0;
+
+        if (baseProductionCost > 0) {
+            productionRate = Math.floor((baseProductionCost - productionCost) / baseProductionCost * 100);
         }
+
+        if (baseCost > 0 && currentCost) {
+            goldRate = Math.floor((baseCost - currentCost) / baseCost * 100);
+        }
+
+        return {
+            productionCost,
+            baseProductionCost,
+            baseCost,
+            productionRate,
+            goldRate,
+            tooltipLoaded: 'true'
+        };
     }
-    // 只有在基础成本有效时才计算折扣率
-    if (baseProductionCost && baseProductionCost > 0) {
-        const productionRate = Math.floor((baseProductionCost - element.dataset.productionCost) / baseProductionCost * 100);
-        if (element.dataset.productionRate !== productionRate.toString()) {
-            element.dataset.productionRate = productionRate;
-        }
+};
+
+// ==========================================
+// 4. UI渲染层 (UI Rendering Layer, URL)
+// 职责：接收DPL的数据指令，操作DOM
+// ==========================================
+export const UpdateQuickBuyItem = (element) => {
+    // 1. 获取上下文 (ULL)
+    const context = QuickBuyULL.getContext(element);
+    if (!context) return;
+
+    // 2. 处理数据 (DPL)
+    const result = QuickBuyDPL.process(context);
+
+    // 3. 执行渲染指令
+    if (result.action === 'HIDE') {
+        QuickBuyULL.setVisible(element, false);
+        return;
     }
-    if (element.dataset.baseCost && element.dataset.cost) {
-        const goldRate = Math.floor((element.dataset.baseCost - element.dataset.cost) / element.dataset.baseCost * 100);
-        if (element.dataset.goldRate !== goldRate.toString()) {
-            element.dataset.goldRate = goldRate;
-        }
+
+    if (result.action === 'SKIP') {
+        return;
     }
-    
-    // 更新缓存
-    updateCache.set(cacheKey, { timestamp: now });
+
+    if (result.action === 'RENDER') {
+        // 显示元素
+        QuickBuyULL.setVisible(element, true);
+        
+        // 设置禁用状态
+        QuickBuyULL.setDisabled(element, result.isDisabled);
+        
+        // 更新数据属性
+        QuickBuyULL.updateDataset(element, result.dataset);
+    }
 };
 
 // 快速购买按钮组件
@@ -188,6 +354,9 @@ export class QuickBuyItem extends FxsChooserItem {
         this.costContainer = document.createElement('div');
         this.costIconElement = document.createElement('span');
         this.costAmountElement = document.createElement('span');
+        
+        // 绑定方法
+        this.onMouseEnter = this.onMouseEnter.bind(this);
     }
 
     // 重写 onActivatableEngineInput 方法，在禁用状态下阻止事件
@@ -211,13 +380,43 @@ export class QuickBuyItem extends FxsChooserItem {
     onAttach() {
         // 添加快速购买按钮事件监听器
         this.Root.addEventListener('chooser-item-selected', (event) => { this.onButtonActivated(event); });
+        // 添加鼠标悬停监听器以延迟加载 tooltip 数据
+        this.Root.addEventListener('mouseenter', this.onMouseEnter);
         super.onAttach();
     }
     
     onDetach() {
         // 移除快速购买按钮的点击事件监听器
         this.Root.removeEventListener('chooser-item-selected', this.onButtonActivated);
+        this.Root.removeEventListener('mouseenter', this.onMouseEnter);
         super.onDetach();
+    }
+
+    /**
+     * 鼠标悬停处理函数
+     * 延迟加载昂贵的 Tooltip 数据（生产力成本对比、折扣率等）
+     */
+    onMouseEnter() {
+        // 如果数据已经加载，不再重复计算
+        if (this.Root.dataset.tooltipLoaded === 'true') return;
+        
+        const category = this.Root.dataset.category;
+        const type = this.Root.dataset.type;
+        const currentCost = parseInt(this.Root.dataset.cost) || 0;
+        
+        if (category && type) {
+             // 获取详细数据
+             const tooltipData = QuickBuyDPL.getTooltipData(category, type, currentCost);
+             
+             // 批量更新 dataset
+             // 注意：直接赋值 dataset 属性会自动触发 onAttributeChanged
+             // 我们使用 requestAnimationFrame 来批量应用更改，尽量减少重绘
+             requestAnimationFrame(() => {
+                 Object.entries(tooltipData).forEach(([key, value]) => {
+                     this.Root.dataset[key] = value;
+                 });
+             });
+        }
     }
     
     render() {
@@ -239,17 +438,18 @@ export class QuickBuyItem extends FxsChooserItem {
         this.costContainer.appendChild(this.costIconElement);
         this.container.appendChild(this.costContainer);
         // 初始化提示内容
-        this.updateTooltipContent();
+        // this.updateTooltipContent();
     }
 
     onButtonActivated(event, animationConfirmCallback) {
-        const city = Cities.get(UI.Player.getHeadSelectedCity());
+        const city = QuickBuyDAL.getSelectedCity();
         const category = this.Root.dataset.category;
         // const category = event.target.dataset.category;
         const type = this.Root.dataset.type;
 
         if (!InterfaceMode.isInInterfaceMode("INTERFACEMODE_PLACE_BUILDING")) {
-            const itemData = findItem(category, type);
+            // 使用 DAL 获取数据
+            const itemData = QuickBuyDAL.getItem(category, type);
             // console.error('F1rstDan onButtonActivated: findItem: ', JSON.stringify(itemData) );
             // 强制使用购买模式，购买核心逻辑
             const bSuccess = Construct(city, itemData, true);
@@ -425,47 +625,58 @@ export class QuickBuyItem extends FxsChooserItem {
                 // 负折扣率（-X%）使用绿色背景 Steam绿色
                 discountPct.style.setProperty("background-color", "#546929");
                 discountPct.style.setProperty("color", "#D0E951");
+                discountPct.textContent = `-${rate}%`;
             } else {
                 // 正折扣率（+X%）使用红色背景
-                discountPct.style.setProperty("background-color", "#6A2A30");
-                discountPct.style.setProperty("color", "#EC3D64");
+                discountPct.style.setProperty("background-color", "#a83232");
+                discountPct.style.setProperty("color", "#ffcbcb");
+                discountPct.textContent = `+${Math.abs(rate)}%`;
             }
             discountPct.style.setProperty("border-radius", "0.2rem");
-            discountPct.textContent = rate > 0 ? `-${rate}%` : `+${Math.abs(rate)}%`;
         }
         
-        // 组装折扣块 - 按照图标|数值|折扣的顺序
         discountBlock.appendChild(iconArea);
         discountBlock.appendChild(priceArea);
-        
-        // 只有在有折扣时才添加折扣百分比区域
-        if (!costsAreSame && rate !== 0) {
-            discountBlock.appendChild(discountPct);
-        }
+        discountBlock.appendChild(discountPct);
         
         return discountBlock;
     }
     
     
     onAttributeChanged(name, oldValue, newValue) {
-        switch (name) {
-            case 'data-cost':
-                const cost = newValue ? parseInt(newValue) : 0;
-                const showCost = !isNaN(cost) && cost > 0;
-                this.costContainer.classList.toggle('hidden', !showCost);
-                this.costAmountElement.textContent = newValue;
-                if (newValue != oldValue && newValue != null) {
-                    this.updateTooltipContent(); // 更新提示内容
-                }
-                break;
-            // case 'data-production-cost':
-            //     if (newValue) {
-            //         this.updateTooltipContent(); // 更新提示内容
-            //     }
-            //     break;
-            default:
-                super.onAttributeChanged(name, oldValue, newValue);
-                break;
+        let shouldCallSuper = true;
+
+        if (name === 'data-cost') {
+            const cost = newValue ? parseInt(newValue) : 0;
+            const showCost = !isNaN(cost) && cost > 0;
+            this.costContainer.classList.toggle('hidden', !showCost);
+            this.costAmountElement.textContent = newValue;
+            shouldCallSuper = false; 
+        }
+
+        // 监听所有影响 Tooltip 的属性
+        const tooltipAttributes = [
+            'data-cost',
+            'data-base-cost',
+            'data-gold-rate',
+            'data-production-cost',
+            'data-base-production-cost',
+            'data-production-rate'
+        ];
+
+        if (tooltipAttributes.includes(name)) {
+            // 使用 requestAnimationFrame 进行防抖，确保所有属性更新后再计算 Tooltip
+            if (!this.tooltipUpdatePending) {
+                this.tooltipUpdatePending = true;
+                requestAnimationFrame(() => {
+                    this.updateTooltipContent();
+                    this.tooltipUpdatePending = false;
+                });
+            }
+        }
+        
+        if (shouldCallSuper) {
+            super.onAttributeChanged(name, oldValue, newValue);
         }
     }
 }

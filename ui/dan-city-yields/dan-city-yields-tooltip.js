@@ -1,14 +1,17 @@
 /**
- * target 数据结构
- * .type .label .value .isNegative 
- * yieldData{}
- * 
+ * F1rstDan's Cool UI - 城市产量 Tooltip
+ * 负责渲染详细的产量构成信息
  */
+
+// 导入必要的依赖
 import TooltipManager from '/core/ui/tooltips/tooltip-manager.js';
-// import { default as TooltipManager } from '/core/ui/tooltips/tooltip-manager.js';
-// import CityDetails from "/base-standard/ui/city-details/model-city-details.js";
 import { C as CityDetails } from "/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js";
-import { getCityDanData } from '/f1rstdan-cool-ui/ui/dan-city-banners/dan-city-custom-data.js';
+import { DanCityData } from '/f1rstdan-cool-ui/ui/dan-city-banners/dan-city-custom-data.js';
+
+// ==========================================
+// 1. 样式注入 (Styles)
+// 职责：为 Tooltip 提供必要的 CSS 样式
+// ==========================================
 const styleElement = document.createElement('style');
 styleElement.innerHTML = `
     .dan-city-yields-tooltip .tooltip__content {
@@ -27,9 +30,8 @@ styleElement.innerHTML = `
     }
 `;
 document.head.appendChild(styleElement);
-// .text-secondary { color: #E5D2AC; } 
-// #82705588 
-// #9D8869
+
+// 定义产量类型对应的文本样式映射
 const yieldTypeTextClassMap = {
     'YIELD_FOOD': 'text-yield-food',
     'YIELD_PRODUCTION': 'text-yield-production',
@@ -42,6 +44,16 @@ const yieldTypeTextClassMap = {
     'DAN_CITY_CONNECTIVITY': 'text-secondary',
     'YIELD_CITIES': 'text-secondary',
 };
+
+// ==========================================
+// 2. UI渲染层 (UI Rendering Layer, URL)
+// 职责：负责创建和更新 Tooltip DOM 结构
+// ==========================================
+
+/**
+ * Tooltip 类型定义类
+ * 遵循官方 TooltipManager 接口规范
+ */
 class DanCityYieldsTooltipType {
     constructor() {
         this.target = null;  // 当前提示框关联的目标元素
@@ -71,10 +83,17 @@ class DanCityYieldsTooltipType {
         this.tooltip.appendChild(this.container);
     }
 
+    /**
+     * 获取 Tooltip 的 HTML 元素
+     * @returns {HTMLElement}
+     */
     getHTML() {
         return this.tooltip;
     }
 
+    /**
+     * 重置 Tooltip 内容
+     */
     reset() {
         // 只清空内容，不移除节点
         this.yieldTitle.innerHTML = '';
@@ -83,17 +102,26 @@ class DanCityYieldsTooltipType {
         this.description.innerHTML = '';
     }
 
+    /**
+     * 检查是否需要更新 Tooltip
+     * @param {HTMLElement} target 鼠标悬停的目标元素
+     * @returns {boolean}
+     */
     isUpdateNeeded(target) {
+        // 以下逻辑是因为 城市横幅的层级结构不一样，这样防止频繁触发卡顿。！重要，不要删除，如需改动要仔细检查。
         // 如果target有yieldData，且this.target和target不同，则需要更新 this.target = target; return true;
         // 如果target没有yieldData，但 (target.tooltipTarget 的值是空的 或 target.tooltipTarget ！== this.target )。寻找父元素，直到找到'.dan-tooltip'带有yieldData的元素。
         // 找到后，把 target.tooltipTarget = targetParent; this.target = targetParent; return true;
         // 如果 targetParent 为空，this.target = null; return false;
         // 如果target没有yieldData，但 target.tooltipTarget == this.target，则不需要更新 return false;
 
+        // 场景1：[城市面板yield-bar-base]:目标元素直接包含 yieldData (由 Decorator 注入)
         if (target && target.yieldData && this.target !== target) {
             this.target = target;
             return true;
         }
+        
+        // 场景2：[城市横幅]:目标元素是子元素，需向上查找包含 yieldData 的父容器
         if (target && !target.yieldData && (!target.tooltipTarget || target.tooltipTarget !== this.target) ) {
             const targetParent = target.closest('.dan-tooltip');
             if (targetParent) {
@@ -106,25 +134,24 @@ class DanCityYieldsTooltipType {
                 return false;
             }
         } 
-        // else if (target && !target.yieldData && target.tooltipTarget == this.target) {
-        //     return false;
-        // }
-        return false;
 
-        // // 检查target是否发生变化
-        // if (this.target !== target) {
-        //     this.target = target;
-        //     return true;
-        // }
-        // return false;
+        return false;
     }
 
-    // 构建tooltip内容
+    /**
+     * 构建 Tooltip 内容 (递归构建 DOM)
+     * @param {Object} yieldData 产量数据
+     * @returns {string} HTML 字符串
+     */
     buildYieldTooltipContent(yieldData) {
         if (!yieldData) return '';
         //debug
         // console.error("F1rstDan debug yieldData[" + yieldData.label + `] : ${JSON.stringify(yieldData)}`);
-
+        if (yieldData.tooltipHTML) {
+            // console.error("F1rstDan use tooltip Cache");
+            // TODO 城市横幅的Tooltip没有用上缓存？为啥？
+            return yieldData.tooltipHTML;
+        }
         const tooltipContent = document.createElement("div");
         
         // 递归处理子数据
@@ -138,6 +165,8 @@ class DanCityYieldsTooltipType {
         tooltipContent.innerHTML = Locale.stylize(tooltipContent.innerHTML);
         //debug
         // console.error("F1rstDan debug innerHTML:" + tooltipContent.innerHTML);
+        // 缓存HTML在yieldData中
+        yieldData.tooltipHTML = tooltipContent.innerHTML;
         return tooltipContent.innerHTML;
     }
     // 为tooltip内容 进行递归处理子数据
@@ -358,8 +387,18 @@ class DanCityYieldsTooltipType {
         // 获取yieldData数据
         const type = this.target.type;
         let targetData = this.target.yieldData;
-        if (this.target.isBanner){
-            targetData = getCityDanData(type, this.target.city);
+        // 如果是 Banner，或者 targetData 没有详情，则尝试从缓存或重新计算获取完整数据
+        if (this.target.isBanner || (targetData && !targetData.hasDetails && targetData.isCustom)) {
+             // 请求详细数据 (includeDetails = true)
+             // 注意：这里会触发 DPL 的补充计算逻辑
+             const detailedData = DanCityData.getData(type, this.target.city, true);
+             if (detailedData) {
+                 targetData = detailedData;
+                 // 如果之前没有绑定 yieldData，现在绑定上
+                 if (!this.target.yieldData) {
+                     this.target.yieldData = targetData;
+                 }
+             }
         }
 
         // if (!yieldData) return;

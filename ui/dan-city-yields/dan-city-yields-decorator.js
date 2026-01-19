@@ -1,94 +1,257 @@
 /**
  * F1rstDan's Cool UI - 城市产量装饰器
- * 非侵入式实现，使用装饰器模式扩展city-yields组件功能
- * sourceMappingURL=file:///base-standard/ui/production-chooser/city-yields.js.map
- * "base-standard\ui\production-chooser\panel-production-chooser.js"
+ * 非侵入式实现，使用装饰器模式扩展 panel-production-chooser 组件功能
+ * 适配文明7新版本架构：city-yields -> yield-bar-base (inside panel-production-chooser)
  * MOD下载地址：https://forums.civfanatics.com/resources/31961/
  * GitHub：https://github.com/F1rstDan/Civ7_F1rstDan_Cool_UI
  */
 
 // 导入必要的依赖
-// import CityYieldsEngine from '/base-standard/ui/utilities/utilities-city-yields.js';
-// import { ComponentID } from '/core/ui/utilities/utilities-component-id.js';
-import { C as CityYields } from '/base-standard/ui/utilities/utilities-city-yields.chunk.js';
-import { C as ComponentID } from '/core/ui/utilities/utilities-component-id.chunk.js';
-import { getUserModOptions } from '/f1rstdan-cool-ui/ui/options/f1rstdan-cool-ui-options.js';
-import { addCustomDataToYields } from '/f1rstdan-cool-ui/ui/dan-city-banners/dan-city-custom-data.js';
+// import { C as ComponentID } from '/core/ui/utilities/utilities-component-id.chunk.js';
+// import { getUserModOptions } from '/f1rstdan-cool-ui/ui/options/f1rstdan-cool-ui-options.js';
+import { DanCityData } from '/f1rstdan-cool-ui/ui/dan-city-banners/dan-city-custom-data.js';
 
-// 定义产量类型对应的文本样式映射
-const yieldTypeTextClassMap = {
-    'YIELD_FOOD': 'text-yield-food',
-    'YIELD_PRODUCTION': 'text-yield-production',
-    'YIELD_GOLD': 'text-yield-gold',
-    'YIELD_SCIENCE': 'text-yield-science',
-    'YIELD_CULTURE': 'text-yield-culture',
-    'YIELD_HAPPINESS': 'text-yield-happiness',
-    'YIELD_DIPLOMACY': 'text-yield-influence',
-    'DAN_CITY_POPULATION': 'text-secondary',
-    'DAN_CITY_CONNECTIVITY': 'text-secondary',
-    'YIELD_CITIES': 'text-secondary',
-};
+// ==========================================
+// 1. UI定位层 (UI Locating Layer, ULL)
+// 职责：封装所有DOM元素查找逻辑，隔离官方UI结构变动
+// ==========================================
+class DanCityYieldsULL {
+    /**
+     * 获取 panel-production-chooser 组件内的 cityYieldBar
+     * @param {HTMLElement} panel 组件实例
+     * @returns {HTMLElement|null}
+     */
+    static getYieldBar(panel) {
+        return panel?.cityYieldBar || null;
+    }
+
+    /**
+     * 获取 YieldBar 的根容器 (处理官方可能的 Root 封装)
+     * @param {HTMLElement} yieldBar 
+     * @returns {HTMLElement|null}
+     */
+    static getYieldBarRoot(yieldBar) {
+        if (!yieldBar) return null;
+        return yieldBar.Root || yieldBar;
+    }
+
+    /**
+     * 获取单个产量项的实际容器 (用于绑定 Tooltip)
+     * @param {HTMLElement} outerContainer 外部容器
+     * @returns {HTMLElement|null}
+     */
+    static getYieldItemContainer(outerContainer) {
+        // 官方结构通常是 outer -> inner (lastElementChild)
+        return outerContainer?.lastElementChild || null;
+    }
+
+    /**
+     * 获取产量数值文本元素
+     * @param {HTMLElement} container 
+     * @returns {HTMLElement|null}
+     */
+    static getValueTextElement(container) {
+        return container?.querySelector('.text-sm') || null;
+    }
+}
+
+// ==========================================
+// 2. 数据处理层 (Data Processing Layer, DPL)
+// 职责：处理组件特有的数据转换逻辑
+// ==========================================
+class DanCityYieldsLocalDPL {
+    /**
+     * 定义产量类型对应的文本样式映射
+     */
+    static get YieldTypeTextClassMap() {
+        return {
+            'YIELD_FOOD': 'text-yield-food',
+            'YIELD_PRODUCTION': 'text-yield-production',
+            'YIELD_GOLD': 'text-yield-gold',
+            'YIELD_SCIENCE': 'text-yield-science',
+            'YIELD_CULTURE': 'text-yield-culture',
+            'YIELD_HAPPINESS': 'text-yield-happiness',
+            'YIELD_DIPLOMACY': 'text-yield-influence',
+            'DAN_CITY_POPULATION': 'text-secondary',
+            'DAN_CITY_CONNECTIVITY': 'text-secondary',
+            'YIELD_CITIES': 'text-secondary',
+        };
+    }
+
+    /**
+     * 将 DanCityData 的数据转换为 yield-bar-base 组件需要的格式
+     * @param {Array} yields 原始产量数据列表
+     * @returns {Array} 转换后的数据列表
+     */
+    static transformToYieldBarData(yields) {
+        if (!Array.isArray(yields)) return [];
+
+        return yields.map(y => ({
+            type: y.type,
+            value: y.value, // 传递原始数值
+            style: 0, // NONE
+            _danData: y // 保留完整自定义数据供 Tooltip 使用
+        }));
+    }
+}
+
+// ==========================================
+// 3. UI渲染层/控制器 (UI Rendering Layer / Controller)
+// 职责：协调各层，管理组件生命周期
+// ==========================================
 
 /**
  * 城市产量装饰器类
- * 使用装饰器模式扩展原生city-yields组件
+ * 使用装饰器模式扩展 panel-production-chooser 组件
  */
 export class DanCityYieldsDecorator {
     constructor(component) {
-        this.cityYields = component; // 保存原始控件引用
-
-        // TODO
-        // 在外层传递 城市ID
-        // 获取每个元素
-        // 根据城市ID和收入类型 获取详细数据
-        // 添加 Tooltip ， .setAttribute('data-tooltip-style', 'dan-city-yields-tooltip');
+        this.panel = component; // 保存 panel-production-chooser 引用
         
-        // // 绑定方法到实例
-        // this.createOrUpdateYieldEntry = this.createOrUpdateYieldEntry.bind(this);
-        // // 添加防抖函数
-        // this.debounce = (func, wait) => {
-        //     let timeout;
-        //     return function(...args) {
-        //         const context = this;
-        //         clearTimeout(timeout);
-        //         timeout = setTimeout(() => func.apply(context, args), wait);
-        //     };
-        // };
-        
-        // // 扩展原始refresh方法
-        // const originalRefresh = this.cityYields.refresh;
-        // this.cityYields.refresh = (yields) => {
-        //     if (!yields) {
-        //         const cityId = this.cityYields.cityID;
-        //         if (!cityId || !ComponentID.isValid(cityId)) {
-        //             console.error('city-yields: invalid city id');
-        //             return;
-        //         }
-        //         // yields = CityYieldsEngine.getCityYieldDetails(cityId);
-        //         yields = CityYields.getCityYieldDetails(cityId);
-        //         // 添加自定义数据
-        //         // this.addCustomYieldData(yields);
-        //         addCustomDataToYields(yields, Cities.get(cityId));
-        //     }
-        //     for (const yieldData of yields) {
-        //         this.createOrUpdateYieldEntry(yieldData);
-        //     }
-        // };
-        // // 应用防抖，设置500毫秒延迟 （防止过多触发事件造成频繁更新数据）
-        // this.cityYields.refresh = this.debounce(this.cityYields.refresh, 150);
-        // // 扩展原始createOrUpdateYieldEntry方法
-        // this.cityYields.createOrUpdateYieldEntry = this.createOrUpdateYieldEntry;
-    }
+        // 绑定方法
+        this.updateCityYieldBar = this.updateCityYieldBar.bind(this);
+        this.applyTooltips = this.applyTooltips.bind(this);
 
-    get isYieldsBarValueFormat() {
-        try {
-            return getUserModOptions().cityYieldsBarValueFormat;
-        } catch (error) {
-            console.error('F1rstDan ModOptions get isYieldsBarValueFormat error:', error);
-            return false;    // 如果MOD配置异常，默认关闭
+        // 扩展原始 updateCityYieldBar 方法
+        if (this.panel.updateCityYieldBar) {
+            this.originalUpdateCityYieldBar = this.panel.updateCityYieldBar.bind(this.panel);
+            this.panel.updateCityYieldBar = this.updateCityYieldBar;
+        } else {
+            console.error('F1rstDan Mod: updateCityYieldBar method not found on panel-production-chooser');
         }
     }
-    
+
+
+    /**
+     * 重写的 updateCityYieldBar 方法
+     * 流程：DPL获取数据 -> LocalDPL转换格式 -> URL渲染
+     */
+    updateCityYieldBar() {
+        if (!this.panel._cityID) {
+            return;
+        }
+
+        // 1. 获取城市对象
+        const city = Cities.get(this.panel._cityID);
+        if (!city) {
+            return;
+        }
+
+        // 2. 使用 DPL 获取详细产量数据
+        const yields = DanCityData.getData('YIELDS_DETAILS', city);
+        if (!yields) {
+            return;
+        }
+
+        // 3. 使用 LocalDPL 转换为 UI 组件需要的格式
+        const yieldBarData = DanCityYieldsLocalDPL.transformToYieldBarData(yields);
+
+        // 4. 设置数据到 yield-bar-base 组件 (URL操作)
+        const yieldBar = DanCityYieldsULL.getYieldBar(this.panel);
+        if (yieldBar) {
+            yieldBar.setAttribute("data-yield-bar", JSON.stringify(yieldBarData));
+            
+            // 5. 后处理：应用 Tooltips 和 自定义样式
+            // 由于 update 是异步的，使用 Observer 确保 DOM 就绪
+            this.applyTooltips(yieldBarData, city);
+        }
+    }
+
+    /**
+     * 应用 Tooltips 和样式修正
+     * @param {Array} yieldBarData 渲染用的数据
+     * @param {Object} city 城市对象
+     */
+    applyTooltips(yieldBarData, city) {
+        const yieldBar = DanCityYieldsULL.getYieldBar(this.panel);
+        if (!yieldBar) {
+            console.error("F1rstDan: yieldBar not found!");
+            return;
+        }
+
+        // 使用 ULL 获取 Root
+        const root = DanCityYieldsULL.getYieldBarRoot(yieldBar);
+        const targetCount = yieldBarData.length;
+
+        // 内部应用逻辑函数
+        const doApply = () => {
+             // 再次检查 root 是否存在 (防守性编程)
+             if (!root) return;
+             
+             const children = root.children;
+
+             for (let i = 0; i < children.length; i++) {
+                const data = yieldBarData[i];
+                if (!data || !data._danData) continue;
+
+                // 使用 ULL 获取容器
+                const container = DanCityYieldsULL.getYieldItemContainer(children[i]);
+                
+                if (container) {
+                    // 添加 Tooltip 样式标记
+                    container.setAttribute('data-tooltip-style', 'dan-city-yields-tooltip');
+                    // 必须添加 dan-tooltip 类
+                    container.classList.add('dan-tooltip');
+                    
+                    // 挂载数据 (ViewModel)
+                    container.yieldData = data._danData;
+                    container.type = data.type;
+                    container.label = data._danData.label;
+                    container.value = data.value;
+                    container.city = city;
+
+                    // 确保可交互
+                    container.classList.add('pointer-events-auto');
+                    
+                    // 应用自定义文本颜色
+                    const colorClass = DanCityYieldsLocalDPL.YieldTypeTextClassMap[data.type];
+                    if (colorClass) {
+                        container.classList.add(colorClass);
+                        // 使用 ULL 查找文本元素
+                        const valueText = DanCityYieldsULL.getValueTextElement(container);
+                        if (valueText) {
+                            valueText.classList.add(colorClass);
+                        }
+                    }
+                }
+            }
+        };
+
+        // 检查是否已经就绪
+        if (root.children.length >= targetCount) {
+            doApply();
+        } else {
+            // 清理旧的 observer
+            if (this._observer) {
+                this._observer.disconnect();
+                this._observer = null;
+            }
+
+            // console.error(`F1rstDan: DOM not ready (Has: ${root.children.length}, Need: ${targetCount}). Waiting...`);
+
+            this._observer = new MutationObserver((mutations, obs) => {
+                if (root.children.length >= targetCount) {
+                    // console.error(`F1rstDan: DOM ready via Observer. Executing.`);
+                    doApply();
+                    obs.disconnect();
+                    this._observer = null;
+                }
+            });
+
+            this._observer.observe(root, { childList: true });
+
+            // 超时保护：500ms 后强制断开，避免内存泄漏
+            setTimeout(() => {
+                if (this._observer) {
+                    // console.error("F1rstDan: Observer timeout. Force checking.");
+                    if (root.children.length > 0) doApply(); // 尽力而为
+                    this._observer.disconnect();
+                    this._observer = null;
+                }
+            }, 500);
+        }
+    }
+
     /**
      * 组件附加前的初始化
      */
@@ -99,18 +262,10 @@ export class DanCityYieldsDecorator {
      * 组件附加后的初始化
      */
     afterAttach() {
-        // 确保组件正确初始化
-        // console.error('F1rstDan city-yields:',this.cityYields);
-        // console.error('F1rstDan city-yields._yieldBarData:',JSON.stringify(this.cityYields._yieldBarData));
-
-        // console.error('F1rstDan city-yields._yieldBarDeltas:',JSON.stringify(this.cityYields._yieldBarDeltas));
-        // console.error('F1rstDan city-yields [outerHTML]:',this.cityYields.Root.outerHTML); //过长报错
-        // 添加tooltip属性
-        // this.cityYields.Root.setAttribute('data-tooltip-style', 'dan-city-yields-tooltip');
-        // this.cityYields.Root.classList.add('pointer-events-auto');
-        // this.cityYields.Root.setAttribute("pointer-events-auto", "");
-        // this.cityYields.Root.removeAttribute("pointer-events-none");
-        // this.cityYields.Root.setAttribute("data-tooltip-content", "F1rstDan's Cool UI");
+        // 初始更新一次，确保数据正确
+        if (this.panel._cityID) {
+            this.updateCityYieldBar();
+        }
     }
 
     beforeDetach() {
@@ -118,70 +273,7 @@ export class DanCityYieldsDecorator {
 
     afterDetach() {
     }
-    
-    /**
-     * 创建或更新产量条目
-     */
-    createOrUpdateYieldEntry({ type, value, label, ...yieldData }) {
-        if (!type) {
-            console.error('city-yields: invalid yield type');
-            return;
-        }
-
-        const yieldElements = this.cityYields.yieldElements.get(type);
-        // 添加临时函数(数字或字符串)，如果设置=true,则将参数 四舍五入 输出，否则将参数 省略.0或,0 输出
-        const formatValue = (value) => {
-            let valueStr = String(value);
-            if (this.isYieldsBarValueFormat) {
-                // 处理不同语言的小数点格式（点或逗号）
-                const numValue = Number(valueStr.replace(',', '.'));
-                if (!isNaN(numValue)) {
-                    valueStr = Math.round(numValue).toString();
-                }
-            } else {
-                // 处理小数点后为0的情况，支持点和逗号两种格式
-                valueStr = valueStr.endsWith('.0') || valueStr.endsWith(',0') ? valueStr.slice(0, -2) : valueStr;
-            }
-            return valueStr;
-        };
-        if (!yieldElements) {
-            const icon = document.createElement('fxs-icon');
-            icon.classList.add('size-8', 'bg-no-repeat', 'bg-center');
-            icon.setAttribute('data-icon-id', type);
-            icon.setAttribute('data-icon-context', 'YIELD');
-
-            const text = document.createTextNode(formatValue(value));
-            const container = document.createElement('div');
-            container.role = "paragraph";
-            container.ariaLabel = `${value} ${label}`;
-            container.className = 'min-w-0 w-12 px-1 flex-initial flex flex-col items-center pointer-events-auto';
-            container.classList.add(yieldTypeTextClassMap[type]);
-            container.append(icon, text);
-            
-            // 添加tooltip属性
-            container.setAttribute('data-tooltip-style', 'dan-city-yields-tooltip');
-            container.type = type;
-            container.label = label;
-            container.value = value;
-            container.yieldData = yieldData;
-    
-            this.cityYields.Root.appendChild(container);
-            this.cityYields.yieldElements.set(type, { text, icon, container });
-        } else {
-            yieldElements.text.nodeValue = formatValue(value);
-            // 更新tooltip内容
-            // 先检查container是否存在
-            if (yieldElements.container) {
-                yieldElements.container.yieldData = yieldData;
-                // 同时更新其他可能需要更新的属性
-                yieldElements.container.value = value;
-            } else {
-                console.error(`F1rstDan city-yields: container for ${type} not found`);
-            }
-        }
-    }
 }
 
-// Controls.decorate('city-yields', (component) => new DanCityYieldsDecorator(component));
-Controls.decorate('yield-bar-base', (component) => new DanCityYieldsDecorator(component));
-
+// 挂载到 panel-production-chooser
+Controls.decorate('panel-production-chooser', (component) => new DanCityYieldsDecorator(component));

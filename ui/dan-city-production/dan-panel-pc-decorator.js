@@ -1,128 +1,131 @@
 // import { GetProductionItems } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
 import { g as GetProductionItems } from '/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js';
 
-// 保存组件引用而不是数据
+// 保存组件引用以便 helper 函数访问
 let decoratedComponent = null;
 
-// 每次调用时从组件获取最新数据
-export const getItems = () => {
-    if (decoratedComponent && decoratedComponent.items) {
-        return decoratedComponent.items;
-    }
-    return null;
-};
+/**
+ * 获取当前组件的生产项目数据
+ * @returns {Object|null} 生产项目数据
+ */
+export function getItems() {
+    return decoratedComponent?.items ?? null;
+}
 
-// 获取购买模式的数据
-export const getItemsForBuy = () => {
-    if (decoratedComponent && decoratedComponent.itemsDataForBuy) {
-        return decoratedComponent.itemsDataForBuy;
-    }
-    return null;
-};
+/**
+ * 获取购买模式下的生产项目数据
+ * @returns {Object|null} 购买模式数据
+ */
+export function getItemsForBuy() {
+    return decoratedComponent?.itemsDataForBuy ?? null;
+}
 
-// 每次调用时从组件获取最新数据
-export const findItem = (category,type) => {
-    if (decoratedComponent && decoratedComponent.items && decoratedComponent.items[category]) {
-        return decoratedComponent.items[category].find(item => item.type === type);
-    }
-    console.error("F1rstDan findItem is undefined")
-    return null;
-};
+/**
+ * 在当前项目中查找特定类型的项目
+ * @param {string} category - 项目类别
+ * @param {string} type - 项目类型
+ * @returns {Object|null} 找到的项目或 null
+ */
+export function findItem(category, type) {
+    return decoratedComponent?.items?.[category]?.find(item => item.type === type) ?? null;
+}
 
-// 获取购买模式下特定类别和类型的项目
-export const findItemForBuy = (category,type) => {
-    if (decoratedComponent && decoratedComponent.itemsDataForBuy && decoratedComponent.itemsDataForBuy[category]) {
-        return decoratedComponent.itemsDataForBuy[category].find(item => item.type === type);
-    }
-    console.error("F1rstDan findItemForBuy is undefined")
-    return null;
-};
+/**
+ * 在购买模式数据中查找特定类型的项目
+ * @param {string} category - 项目类别
+ * @param {string} type - 项目类型
+ * @returns {Object|null} 找到的项目或 null
+ */
+export function findItemForBuy(category, type) {
+    return decoratedComponent?.itemsDataForBuy?.[category]?.find(item => item.type === type) ?? null;
+}
 
 export class DanProductionChooserScreenDecorator {
 
     constructor(component) {
         this.component = component;
-        // 保存组件引用而不是数据
         decoratedComponent = component;
-        // 初始化购买模式数据
-        // this.component.itemsDataForBuy = null;
-        // 初始化购买模式数据 - 使用getter替代直接赋值
-        // 定义itemsDataForBuy的getter，类似于原始items的getter
+        
+        this._initializeBuyData();
+        this._hookUpdateItems();
+    }
+
+    /**
+     * 初始化购买模式数据的 getter/setter
+     * @private
+     */
+    _initializeBuyData() {
+        // 初始化内部存储
+        this.component._itemsDataForBuy = null;
+
+        // 定义 itemsDataForBuy 属性，实现懒加载
         Object.defineProperty(this.component, 'itemsDataForBuy', {
             get: function() {
-                // 如果为空，则自动获取购买模式的数据
-                this._itemsDataForBuy ?? (this._itemsDataForBuy = GetProductionItems(
-                    this.city, 
-                    this.recommendations, 
-                    this.playerGoldBalance, 
-                    true, // 强制为购买模式
-                    this.viewHidden, 
-                    this.uqInfo
-                ));
+                if (!this._itemsDataForBuy) {
+                    this._itemsDataForBuy = GetProductionItems(
+                        this.city, 
+                        this.recommendations, 
+                        this.playerGoldBalance, 
+                        true, // 强制为购买模式
+                        this.viewHidden, 
+                        this.uqInfo
+                    );
+                }
                 return this._itemsDataForBuy;
             },
             set: function(value) {
                 this._itemsDataForBuy = value;
             }
         });
-        
-        // 初始化内部存储属性
-        this.component._itemsDataForBuy = null;
-        
-        // 扩展原始updateItems方法，跟随更新 itemsDataForBuy 的数据
-        if (this.component.updateItems) {
-            // 保存原始UpdateGate实例
-            const originalUpdateItems = this.component.updateItems;
-            // 保存原始call方法的引用
-            const originalCall = originalUpdateItems.call;
+    }
+
+    /**
+     * 扩展 updateItems 方法以同步更新购买数据
+     * @private
+     */
+    _hookUpdateItems() {
+        if (!this.component.updateItems) return;
+
+        const originalUpdateItems = this.component.updateItems;
+        const originalCall = originalUpdateItems.call;
+
+        // 重写 call 方法以拦截调用
+        originalUpdateItems.call = function(...args) {
+            // 调用原始 call 方法
+            const result = originalCall.apply(this, args);
             
-            // 重写call方法
-            originalUpdateItems.call = function(...args) {
-                // 调用原始call方法
-                const result = originalCall.apply(this, args);
-                // 在原方法后执行自定义代码 - 更新购买模式数据
-                const component = decoratedComponent;
-                if (component && component.city) {
-                    if (!component.isPurchase) {
-                        // 如果当前不是购买模式，则获取购买模式的数据
-                        component.itemsDataForBuy = GetProductionItems(
-                            component.city, 
-                            component.recommendations, 
-                            component.playerGoldBalance, 
-                            true, // 强制为购买模式
-                            component.viewHidden, 
-                            component.uqInfo
-                        );
-                    } else {
-                        // 如果当前是购买模式，则购买模式数据等于当前数据
-                        component.itemsDataForBuy = component._items;
-                    }
-                }
-                return result;
-            };
-            // 确保其他方法和属性保持不变
-            Object.keys(originalCall).forEach(key => {
-                if (typeof originalCall[key] === 'function') {
-                    originalUpdateItems.call[key] = originalCall[key].bind(originalCall);
+            // 更新购买数据
+            if (decoratedComponent?.city) {
+                if (decoratedComponent.isPurchase) {
+                    // 如果当前是购买模式，则购买模式数据等于当前数据
+                    decoratedComponent.itemsDataForBuy = decoratedComponent._items;
                 } else {
-                    originalUpdateItems.call[key] = originalCall[key];
+                    // 如果当前不是购买模式，则获取购买模式的数据
+                    decoratedComponent.itemsDataForBuy = GetProductionItems(
+                        decoratedComponent.city, 
+                        decoratedComponent.recommendations, 
+                        decoratedComponent.playerGoldBalance, 
+                        true, // 强制为购买模式
+                        decoratedComponent.viewHidden, 
+                        decoratedComponent.uqInfo
+                    );
                 }
-            });
-        }
+            }
+            return result;
+        };
+
+        // 保持原始 call 方法的属性
+        Object.keys(originalCall).forEach(key => {
+            originalUpdateItems.call[key] = typeof originalCall[key] === 'function'
+                ? originalCall[key].bind(originalCall)
+                : originalCall[key];
+        });
     }
 
-    beforeAttach() {
-    }
-
-    afterAttach() {
-    }
-
-    beforeDetach() {
-    }
-
-    afterDetach() {
-    }
-    
+    beforeAttach() {}
+    afterAttach() {}
+    beforeDetach() {}
+    afterDetach() {}
 }
 
 Controls.decorate('panel-production-chooser', (component) => new DanProductionChooserScreenDecorator(component));
