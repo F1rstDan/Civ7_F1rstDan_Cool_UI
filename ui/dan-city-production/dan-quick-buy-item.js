@@ -326,7 +326,9 @@ export const UpdateQuickBuyItem = (element) => {
 
     // 3. 执行渲染指令
     if (result.action === 'HIDE') {
-        QuickBuyULL.setVisible(element, false);
+        if (!element.classList.contains('hidden')) {
+            QuickBuyULL.setVisible(element, false);
+        }
         return;
     }
 
@@ -336,10 +338,15 @@ export const UpdateQuickBuyItem = (element) => {
 
     if (result.action === 'RENDER') {
         // 显示元素
-        QuickBuyULL.setVisible(element, true);
+        if (element.classList.contains('hidden')) {
+            QuickBuyULL.setVisible(element, true);
+        }
         
         // 设置禁用状态
-        QuickBuyULL.setDisabled(element, result.isDisabled);
+        const currentDisabled = element.getAttribute('disabled') === 'true';
+        if (currentDisabled !== result.isDisabled) {
+            QuickBuyULL.setDisabled(element, result.isDisabled);
+        }
         
         // 更新数据属性
         QuickBuyULL.updateDataset(element, result.dataset);

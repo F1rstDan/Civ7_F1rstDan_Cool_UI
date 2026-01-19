@@ -95,6 +95,7 @@ export class DanProductionItemDecorator {
                 this.refreshProductionCost();
             }
             this.updateQuickBuyButton();
+            // console.error('F1rstDan afterAttach() ADD ProductionItem');
         } catch (error) {
             console.error('F1rstDan DanProductionItemDecorator afterAttach error:', error);
         }
@@ -215,12 +216,15 @@ export class DanProductionItemDecorator {
      * 更新/初始化快速购买按钮
      */
     updateQuickBuyButton() {
+        if (!this.item.Root) return;
+
         // 城镇不显示购买按钮，避免闪烁和性能浪费
         const cityID = UI.Player.getHeadSelectedCity();
         if (cityID) {
             const city = Cities.get(cityID);
             if (city?.isTown) return;
         }
+        // console.error('F1rstDan afterAttach() ADD ProductionItem, updateQuickBuyButton()');
 
         const quickBuyButton = this.createCustomElement('quickBuyButton', 'quick-buy-item', '', this.item.Root);
         // 确保按钮在Root的最后
@@ -449,6 +453,11 @@ export class DanProductionItemDecorator {
 
     /**
      * 创建或获取自定义元素
+     * @param {string} propertyName - 元素在 item 中的属性名
+     * @param {string} tagName - 元素的标签名
+     * @param {string} className - 元素的类名
+     * @param {Element} parentElement - 元素的父元素
+     * @returns {Element} - 创建或获取的元素
      */
     createCustomElement(propertyName, tagName, className, parentElement) {
         if (!this.item) return null;

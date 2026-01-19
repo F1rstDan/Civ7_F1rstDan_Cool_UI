@@ -78,6 +78,18 @@ class DanCityYieldsLocalDPL {
         };
     }
 
+    static normalizeYieldValue(y) {
+        if (!y) return 0;
+        const valueStr = y.value === undefined || y.value === null ? '' : String(y.value);
+        if (typeof y.valueNum === 'number' && Number.isFinite(y.valueNum)) {
+            // 如果有 valueNum，直接使用它。对数值进行四舍五入保留三位小数。
+            return Math.round(y.valueNum * 1000) / 1000;
+        }
+        const normalized = Number(valueStr.replace(',', '.'));
+        // 如果转换失败或结果为 NaN，返回 0
+        return Number.isFinite(normalized) ? Math.round(normalized * 1000) / 1000 : 0;
+    }
+
     /**
      * 将 DanCityData 的数据转换为 yield-bar-base 组件需要的格式
      * @param {Array} yields 原始产量数据列表
@@ -88,7 +100,7 @@ class DanCityYieldsLocalDPL {
 
         return yields.map(y => ({
             type: y.type,
-            value: y.value, // 传递原始数值
+            value: DanCityYieldsLocalDPL.normalizeYieldValue(y),
             style: 0, // NONE
             _danData: y // 保留完整自定义数据供 Tooltip 使用
         }));

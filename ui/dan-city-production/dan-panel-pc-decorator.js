@@ -3,6 +3,30 @@ import { g as GetProductionItems } from '/base-standard/ui/production-chooser/pr
 
 // 保存组件引用以便 helper 函数访问
 let decoratedComponent = null;
+let itemsIndex = null;
+let itemsForBuyIndex = null;
+
+const buildItemsIndex = (items) => {
+    if (!items) return null;
+    const index = new Map();
+    Object.entries(items).forEach(([category, list]) => {
+        if (!Array.isArray(list)) return;
+        const typeMap = new Map();
+        list.forEach(item => {
+            if (item?.type != null) {
+                typeMap.set(item.type, item);
+            }
+        });
+        if (typeMap.size > 0) {
+            index.set(category, typeMap);
+        }
+    });
+    return index;
+};
+
+const getFromIndex = (index, category, type) => {
+    return index?.get(category)?.get(type) ?? null;
+};
 
 /**
  * 获取当前组件的生产项目数据
@@ -27,6 +51,8 @@ export function getItemsForBuy() {
  * @returns {Object|null} 找到的项目或 null
  */
 export function findItem(category, type) {
+    const cachedItem = getFromIndex(itemsIndex, category, type);
+    if (cachedItem) return cachedItem;
     return decoratedComponent?.items?.[category]?.find(item => item.type === type) ?? null;
 }
 
@@ -37,6 +63,8 @@ export function findItem(category, type) {
  * @returns {Object|null} 找到的项目或 null
  */
 export function findItemForBuy(category, type) {
+    const cachedItem = getFromIndex(itemsForBuyIndex, category, type);
+    if (cachedItem) return cachedItem;
     return decoratedComponent?.itemsDataForBuy?.[category]?.find(item => item.type === type) ?? null;
 }
 
@@ -70,11 +98,13 @@ export class DanProductionChooserScreenDecorator {
                         this.viewHidden, 
                         this.uqInfo
                     );
+                    itemsForBuyIndex = buildItemsIndex(this._itemsDataForBuy);
                 }
                 return this._itemsDataForBuy;
             },
             set: function(value) {
                 this._itemsDataForBuy = value;
+                itemsForBuyIndex = buildItemsIndex(this._itemsDataForBuy);
             }
         });
     }
@@ -110,6 +140,7 @@ export class DanProductionChooserScreenDecorator {
                         decoratedComponent.uqInfo
                     );
                 }
+                itemsIndex = buildItemsIndex(decoratedComponent._items);
             }
             return result;
         };
