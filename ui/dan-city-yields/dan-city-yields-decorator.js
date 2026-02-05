@@ -82,12 +82,12 @@ class DanCityYieldsLocalDPL {
         if (!y) return 0;
         const valueStr = y.value === undefined || y.value === null ? '' : String(y.value);
         if (typeof y.valueNum === 'number' && Number.isFinite(y.valueNum)) {
-            // 如果有 valueNum，直接使用它。对数值进行四舍五入保留三位小数。
-            return Math.round(y.valueNum * 1000) / 1000;
+            // 如果有 valueNum，直接使用它。对数值进行四舍五入保留一位小数。
+            return Math.round(y.valueNum * 10) / 10;
         }
         const normalized = Number(valueStr.replace(',', '.'));
         // 如果转换失败或结果为 NaN，返回 0
-        return Number.isFinite(normalized) ? Math.round(normalized * 1000) / 1000 : 0;
+        return Number.isFinite(normalized) ? Math.round(normalized * 10) / 10 : 0;
     }
 
     /**

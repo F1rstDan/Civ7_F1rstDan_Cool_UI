@@ -1,7 +1,10 @@
-// import { GetProductionItems } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
+/**
+ * sourceURL=file:///base-standard/ui/production-chooser/panel-production-chooser.js
+ */
 import { g as GetProductionItems } from '/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js';
 
-// 保存组件引用以便 helper 函数访问
+// 保存组件引用以便 helper 函数访问，万能入口
+// decoratedComponent = 注入当前选择城市的内部组件，可以直接访问内部数据，不需要`export function`。`UI.Player.getHeadSelectedCity()`限制太多。
 let decoratedComponent = null;
 let itemsIndex = null;
 let itemsForBuyIndex = null;
@@ -29,6 +32,14 @@ const getFromIndex = (index, category, type) => {
 };
 
 /**
+ * 检查当前是否处于购买模式
+ * @returns {boolean} 是否为购买模式
+ */
+export function getIsPurchaseMode() {
+    return decoratedComponent?.isPurchase ?? false;
+}
+
+/**
  * 获取当前组件的生产项目数据
  * @returns {Object|null} 生产项目数据
  */
@@ -43,7 +54,22 @@ export function getItems() {
 export function getItemsForBuy() {
     return decoratedComponent?.itemsDataForBuy ?? null;
 }
-
+/**
+ * 刷新购买模式数据
+ * @description 刷新当前城市的购买模式数据，包括项目列表和推荐项目
+ */
+export function refreshPurchaseData() {
+    if (!decoratedComponent?.city || !decoratedComponent?.updateItems) return;
+    decoratedComponent.updateItems.call(decoratedComponent);
+    decoratedComponent.itemsDataForBuy = GetProductionItems(
+        decoratedComponent.city,
+        decoratedComponent.recommendations,
+        decoratedComponent.playerGoldBalance,
+        true,   // 强制为购买模式
+        decoratedComponent.viewHidden,
+        decoratedComponent.uqInfo
+    );
+}
 /**
  * 在当前项目中查找特定类型的项目
  * @param {string} category - 项目类别

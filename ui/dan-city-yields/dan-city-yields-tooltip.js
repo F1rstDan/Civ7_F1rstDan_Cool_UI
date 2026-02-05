@@ -426,7 +426,7 @@ class DanCityYieldsTooltipType {
 
 
         // 设置标题和内容
-        let value;
+        let value = "";
         if (this.target.value) {
             if (targetData.valueType == -1) {
                 value = this.target.value;

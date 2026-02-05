@@ -3,7 +3,7 @@ import { InterfaceMode } from '/core/ui/interface-modes/interface-modes.js';
 // import { ProductionPanelCategory, Construct } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
 import { F as FxsChooserItem } from '/core/ui/components/fxs-chooser-item.chunk.js';
 import { P as ProductionPanelCategory, h as Construct } from '/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js';
-import { findItemForBuy, findItem } from './dan-panel-pc-decorator.js';
+import { findItemForBuy, findItem, getIsPurchaseMode, refreshPurchaseData } from './dan-panel-pc-decorator.js';
 import { ProductionChooserScreen } from '/base-standard/ui/production-chooser/panel-production-chooser.js';
 
 
@@ -194,10 +194,23 @@ const QuickBuyDPL = {
         const { element, parentData } = context;
         const category = parentData.category;
         const type = parentData.type;
-        const isPurchaseMode = parentData.isPurchase === 'true';
+        // element 就是快速购买按钮元素。
+        // 【parentData】 包含的数据有以下：
+        // console.error('F1rstDan UpdateQuickBuyItem: parentData', parentData == null ? 'null' : JSON.stringify(parentData));
+        // parentData {
+        // "focusContextName": "default (no focus context)",
+        // "category": "buildings",
+        // "type": "BUILDING_GRANARY",
+        // "audioGroupRef": "city-actions",
+        // "audioActivateRef": "none",
+        // "audioFocusRef": "data-audio-city-production-focus",
+        // "name": "ProductionChooserItem",
+        // "activatable": "true"
+        // }
         
         // 1. 基础有效性检查
         const city = QuickBuyDAL.getSelectedCity();
+        const isPurchaseMode = getIsPurchaseMode();
 
         // 2. 规则检查
         // 购买模式下一律不显示快速购买
@@ -366,7 +379,7 @@ export class QuickBuyItem extends FxsChooserItem {
         this.onMouseEnter = this.onMouseEnter.bind(this);
     }
 
-    // 重写 onActivatableEngineInput 方法，在禁用状态下阻止事件
+    // 重写 onActivatableEngineInput 方法，在禁用状态下阻止事件冒泡
     onActivatableEngineInput(inputEvent) {
         // 如果按钮被禁用，阻止所有事件
         if (this.disabled) {
@@ -449,6 +462,9 @@ export class QuickBuyItem extends FxsChooserItem {
     }
 
     onButtonActivated(event, animationConfirmCallback) {
+        // 阻止事件冒泡与默认行为，避免父级生产条目继续处理点击事件而加入队列
+        event?.stopPropagation();
+        event?.preventDefault();
         const city = QuickBuyDAL.getSelectedCity();
         const category = this.Root.dataset.category;
         // const category = event.target.dataset.category;
@@ -463,6 +479,10 @@ export class QuickBuyItem extends FxsChooserItem {
             // 使用快速购买按钮后，不会自动切到购买模式
             ProductionChooserScreen.shouldReturnToPurchase = false;
             if (bSuccess) {
+                setTimeout(() => {
+                    refreshPurchaseData();
+                    // UpdateQuickBuyItem(this.Root);   //不需要这个，刷新数据就全自动更新了
+                }, 300);
                 animationConfirmCallback?.();
                 // // 如果快速购买的是单位，则关闭界面
                 // if (category === ProductionPanelCategory.UNITS) {

@@ -95,6 +95,15 @@ export class DanProductionItemDecorator {
                 this.refreshProductionCost();
             }
             this.updateQuickBuyButton();
+            // test 测试用，打印`生产项目`根元素DOM结构
+            // if (!globalThis.__f1danPrintedRootDom) {
+            //     this.printDom(this.item.Root, 4, 10, 'ProductionItem Root');
+            //     globalThis.__f1danPrintedRootDom = true;
+            // }
+
+            // const target = this.item.Root?.firstElementChild?.children?.[2];
+            // this.printDom(target, 4, 10, 'ProductionItem HUD');
+            
             // console.error('F1rstDan afterAttach() ADD ProductionItem');
         } catch (error) {
             console.error('F1rstDan DanProductionItemDecorator afterAttach error:', error);
@@ -226,10 +235,11 @@ export class DanProductionItemDecorator {
         }
         // console.error('F1rstDan afterAttach() ADD ProductionItem, updateQuickBuyButton()');
 
-        const quickBuyButton = this.createCustomElement('quickBuyButton', 'quick-buy-item', '', this.item.Root);
-        // 确保按钮在Root的最后
-        if (this.item.Root.lastChild !== quickBuyButton) {
-             this.item.Root.appendChild(quickBuyButton);
+        // 把购买按钮放在Root里第一个子元素的末尾
+        const targetParent = this.item.Root.firstElementChild || this.item.Root;
+        const quickBuyButton = this.createCustomElement('quickBuyButton', 'quick-buy-item', '', targetParent);
+        if (targetParent && targetParent.lastChild !== quickBuyButton) {
+            targetParent.appendChild(quickBuyButton);
         }
         
         UpdateQuickBuyItem(quickBuyButton);
@@ -508,6 +518,30 @@ export class DanProductionItemDecorator {
     toggleVisibility(element, isVisible) {
         if (!element) return;
         isVisible ? element.classList.remove('hidden') : element.classList.add('hidden');
+    }
+    /**
+     * 打印 DOM 结构
+     */
+    printDom(element, depth = 2, maxChildren = 10, elementName = 'element') {
+        if (!element) {
+            console.error('F1rstDan printDom: The element is empty');
+            return;
+        }
+        const buildSummary = (node, currentDepth) => {
+            if (!node || currentDepth < 0) return null;
+            const summary = {
+                tagName: node.tagName,
+                className: node.className,
+                childCount: node.childElementCount
+            };
+            if (currentDepth === 0) return summary;
+            summary.children = Array.from(node.children)
+                .slice(0, maxChildren)
+                .map(child => buildSummary(child, currentDepth - 1));
+            return summary;
+        };
+        const payload = buildSummary(element, depth);
+        console.error(`F1rstDan ${elementName} DOM:`, JSON.stringify(payload, null, 2));
     }
     // #endregion
 }
