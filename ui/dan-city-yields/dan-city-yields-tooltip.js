@@ -5,7 +5,7 @@
 
 // 导入必要的依赖
 import TooltipManager from '/core/ui/tooltips/tooltip-manager.js';
-import { C as CityDetails } from "/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js";
+import CityDetails from '/base-standard/ui/city-details/model-city-details.js';
 import { DanCityData } from '/f1rstdan-cool-ui/ui/dan-city-banners/dan-city-custom-data.js';
 
 // ==========================================

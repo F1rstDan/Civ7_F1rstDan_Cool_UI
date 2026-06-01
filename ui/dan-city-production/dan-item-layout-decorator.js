@@ -7,7 +7,7 @@
  * GitHub：https://github.com/F1rstDan/Civ7_F1rstDan_Cool_UI
  */
 
-import { P as ProductionPanelCategory } from '/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js';
+import { ProductionPanelCategory } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
 import { getUserModOptions } from '/f1rstdan-cool-ui/ui/options/f1rstdan-cool-ui-options.js';
 import './dan-quick-buy-item.js';
 import { UpdateQuickBuyItem } from './dan-quick-buy-item.js';

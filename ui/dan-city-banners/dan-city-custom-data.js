@@ -5,7 +5,7 @@
  * 遵循分层架构设计原则。
  */
 
-import { C as CityYieldsEngine } from '/base-standard/ui/utilities/utilities-city-yields.chunk.js';
+import CityYields from '/base-standard/ui/utilities/utilities-city-yields.js';
 
 // ==========================================
 // 1. 数据处理层 (Data Processing Layer, DPL)
@@ -117,7 +117,7 @@ export const DanCityData = {
         let yields = [];
         try {
             if (city && city.id) {
-                 yields = CityYieldsEngine.getCityYieldDetails(city.id);
+                 yields = CityYields.getCityYieldDetails(city.id);
             }
         } catch (e) {
             console.error("DanCityData: Error getting city yields details", e);

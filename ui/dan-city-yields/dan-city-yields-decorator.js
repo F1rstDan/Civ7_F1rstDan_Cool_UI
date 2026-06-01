@@ -7,7 +7,6 @@
  */
 
 // 导入必要的依赖
-// import { C as ComponentID } from '/core/ui/utilities/utilities-component-id.chunk.js';
 // import { getUserModOptions } from '/f1rstdan-cool-ui/ui/options/f1rstdan-cool-ui-options.js';
 import { DanCityData } from '/f1rstdan-cool-ui/ui/dan-city-banners/dan-city-custom-data.js';
 

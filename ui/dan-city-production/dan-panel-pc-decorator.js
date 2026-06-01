@@ -1,7 +1,7 @@
 /**
  * sourceURL=file:///base-standard/ui/production-chooser/panel-production-chooser.js
  */
-import { g as GetProductionItems } from '/base-standard/ui/production-chooser/production-chooser-helpers.chunk.js';
+import { GetProductionItems } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
 
 // 保存组件引用以便 helper 函数访问，万能入口
 // decoratedComponent = 注入当前选择城市的内部组件，可以直接访问内部数据，不需要`export function`。`UI.Player.getHeadSelectedCity()`限制太多。
@@ -67,7 +67,7 @@ export function refreshPurchaseData() {
         decoratedComponent.playerGoldBalance,
         true,   // 强制为购买模式
         decoratedComponent.viewHidden,
-        decoratedComponent.uqInfo
+        decoratedComponent.uniqueQuarterInfos
     );
 }
 /**
@@ -122,7 +122,7 @@ export class DanProductionChooserScreenDecorator {
                         this.playerGoldBalance, 
                         true, // 强制为购买模式
                         this.viewHidden, 
-                        this.uqInfo
+                        this.uniqueQuarterInfos
                     );
                     itemsForBuyIndex = buildItemsIndex(this._itemsDataForBuy);
                 }
@@ -163,7 +163,7 @@ export class DanProductionChooserScreenDecorator {
                         decoratedComponent.playerGoldBalance, 
                         true, // 强制为购买模式
                         decoratedComponent.viewHidden, 
-                        decoratedComponent.uqInfo
+                        decoratedComponent.uniqueQuarterInfos
                     );
                 }
                 itemsIndex = buildItemsIndex(decoratedComponent._items);

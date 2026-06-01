@@ -61,8 +61,8 @@ export const getUserModOptions = () => getSettings(modSettingsKey);
 // import { Options, OptionType } from '/core/ui/options/model-options.js';
 // import { CategoryType, CategoryData } from '/core/ui/options/options-helpers.js';
 // import '/core/ui/options/options.js';
-import { O as Options, a as OptionType, C as CategoryType, d as CategoryData } from '/core/ui/options/editors/index.chunk.js';
-import '/core/ui/options/editors/index.chunk.js';
+import { Options, OptionType, CategoryType } from '/core/ui/options/model-options.js';
+import { CategoryData } from '/core/ui/options/options-helpers.js';
 const proto = Object.getPrototypeOf(Options);
 // ============================================================================
 
