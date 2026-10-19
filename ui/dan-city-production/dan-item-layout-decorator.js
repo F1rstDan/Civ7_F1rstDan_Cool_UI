@@ -9,6 +9,9 @@
 
 import { ProductionPanelCategory } from '/base-standard/ui/production-chooser/production-chooser-helpers.js';
 import { getUserModOptions } from '/f1rstdan-cool-ui/ui/options/f1rstdan-cool-ui-options.js';
+import { AdvisorRecommendationsList } from '/base-standard/ui-next/components/advisor-recommendation.js';
+import { createComponent, createSignal } from '/core/vendor/solid-js/dist/solid.js';
+import { render } from '/core/vendor/solid-js/web/dist/web.js';
 import './dan-quick-buy-item.js';
 import { UpdateQuickBuyItem } from './dan-quick-buy-item.js';
 
@@ -59,6 +62,20 @@ styleElement.innerHTML = `
     .dan-compact-production .hud_sidepanel_list-bg-no-fill .my-1 {
         margin-top: 0;
         margin-bottom: 0;
+    }
+    /* Gameface 不支持 Grid；在标签容器内用 Flex 排列官方推荐组件。 */
+    .dan-compact-production .dan-production-top-row {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-end;
+    }
+    .dan-top-recommendations {
+        display: flex;
+        flex-shrink: 0;
+    }
+    .dan-compact-production.dan-top-recommendations-active .items-stretch > .justify-end > .flex-auto.self-end > .flex-row.items-center.self-end > .relative.font-body {
+        display: none;
     }
     .dan-maintenance .size-6 {
         width: 1rem;
@@ -150,6 +167,14 @@ export class DanProductionItemDecorator {
     beforeDetach() {
         if (this.solidRefreshFrame) cancelAnimationFrame(this.solidRefreshFrame);
         this.solidRefreshFrame = null;
+        this.solidRecommendationsDispose?.();
+        this.solidRecommendationsDispose = null;
+        this.solidRecommendationsElement?.parentElement?.classList.remove('dan-production-top-row');
+        this.solidRecommendationsElement?.remove();
+        this.solidRecommendationsElement = null;
+        this.solidRecommendationsData = undefined;
+        this.setSolidRecommendations = null;
+        this.item.Root.classList.remove('dan-top-recommendations-active');
     }
 
     afterDetach() {
@@ -165,11 +190,54 @@ export class DanProductionItemDecorator {
         const main = row?.querySelector('.justify-between');
         return {
             details: main?.querySelector('.production-chooser__font-icon-positioning') || main?.querySelector('.text-sm'),
-            cost: row?.lastElementChild?.querySelector('.flex-row.items-center.self-end')
+            cost: row?.lastElementChild?.querySelector('.flex-row.items-center.self-end'),
+            header: row?.lastElementChild?.firstElementChild
         };
     }
 
+    refreshSolidRecommendations() {
+        const { header } = this.getSolidItemParts();
+        if (!header) return;
+
+        // 只挂载 MOD 自己的节点，避免搬移原节点后破坏 Solid 的动态更新。
+        if (!this.solidRecommendationsElement) {
+            this.solidRecommendationsElement = document.createElement('div');
+            this.solidRecommendationsElement.className = 'dan-top-recommendations';
+            const [recommendations, setRecommendations] = createSignal([]);
+            this.setSolidRecommendations = setRecommendations;
+            this.solidRecommendationsDispose = render(() => createComponent(AdvisorRecommendationsList, {
+                get recommendations() { return recommendations(); },
+                direction: 'horizontal',
+                iconOnly: true,
+                noWrap: true
+            }), this.solidRecommendationsElement);
+        }
+
+        const raw = this.item.Root.getAttribute('data-recommendations');
+        if (raw !== this.solidRecommendationsData) {
+            let recommendations = [];
+            try {
+                recommendations = raw ? JSON.parse(raw).map(entry => entry.class) : [];
+            } catch (error) {
+                console.error('F1rstDan production recommendations parse error:', error);
+            }
+            this.setSolidRecommendations(recommendations);
+            this.solidRecommendationsData = raw;
+        }
+
+        // “无时代限制”切换时，Solid 可能清空标签容器，刷新后重新挂载。
+        if (this.solidRecommendationsElement.parentElement !== header) {
+            header.insertBefore(this.solidRecommendationsElement, header.firstChild);
+        }
+        // 与官方一致：没有有效费用时，不显示这一组推荐图标。
+        const cost = Number(this.item.Root.getAttribute('data-cost') ?? '');
+        this.solidRecommendationsElement.style.display = Number.isNaN(cost) || cost < 0 ? 'none' : 'flex';
+        header.classList.add('dan-production-top-row');
+        this.item.Root.classList.add('dan-top-recommendations-active');
+    }
+
     refreshSolidItem() {
+        if (this.isApplyLayout) this.refreshSolidRecommendations();
         if (this.isDisplayMaintenance) this.refreshMaintenance();
         else this.item.maintenanceElement?.classList.add('hidden');
         if (this.isDisplayProductionCost) this.refreshProductionCost();
@@ -187,6 +255,7 @@ export class DanProductionItemDecorator {
         // 新版使用 Solid 渲染，没有旧组件的 container 等字段。
         if (this.item.Root.querySelector('[data-name="ProductionChooserItem"]')) {
             this.item.Root.classList.add('dan-compact-production');
+            this.refreshSolidRecommendations();
             return;
         }
 
@@ -496,7 +565,7 @@ export class DanProductionItemDecorator {
         if (newValue === oldValue) return;
 
         if (this.item.Root.querySelector('[data-name="ProductionChooserItem"]')) {
-            if (['data-type', 'data-category', 'data-cost', 'data-is-purchase', 'data-secondary-details', 'data-base-yields', 'data-info-display-type'].includes(name)) {
+            if (['data-type', 'data-category', 'data-cost', 'data-is-purchase', 'data-is-ageless', 'data-recommendations', 'data-secondary-details', 'data-base-yields', 'data-info-display-type'].includes(name)) {
                 if (this.solidRefreshFrame) cancelAnimationFrame(this.solidRefreshFrame);
                 this.solidRefreshFrame = requestAnimationFrame(() => {
                     this.solidRefreshFrame = null;

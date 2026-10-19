@@ -441,6 +441,7 @@ export class QuickBuyItem extends FxsChooserItem {
     render() {
         this.Root.classList.add('quick-buy-item', 'text-xs', 'leading-tight');
         this.Root.style.setProperty("min-width", "4.4rem");
+        this.Root.style.setProperty("max-width", "5rem");   //2026.06.03 兼容性其他MOD，删除也无妨。避免过长的按钮导致其他MOD布局错乱。
         this.Root.setAttribute("data-audio-group-ref", "city-actions");
         this.Root.setAttribute("data-audio-focus-ref", "data-audio-city-production-focus");
         this.Root.setAttribute("data-audio-activate-ref", "data-audio-city-purchase-activate");    // 激活金币音效

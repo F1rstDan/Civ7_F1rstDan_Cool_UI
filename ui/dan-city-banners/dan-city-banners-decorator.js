@@ -12,16 +12,23 @@ styleElement.innerHTML = `
     display: none !important;
 }
 .dan-banner-connection {
+    /* 城市连通性金圈：手动微调以下参数即可。 */
+    --dan-connection-size: 2rem;           /* 圆圈直径。 */
+    --dan-connection-offset-y: -0.28rem;   /* 负值上移，正值下移。 */
+    --dan-connection-margin-left: -0.33rem;  /* 左外边距，减小可收紧左侧间隔。 */
+    --dan-connection-margin-right: -0.11rem; /* 右外边距，减小可收紧右侧间隔。 */
     display: flex;
     position: relative;
     align-items: center;
     justify-content: center;
-    align-self: center;
+    align-self: flex-start;
     flex-shrink: 0;
-    width: 2rem;
-    height: 2rem;
-    margin-left: 0.22rem;
-    margin-right: 0.22rem;
+    width: var(--dan-connection-size);
+    height: var(--dan-connection-size);
+    /* 对齐官方人口圆圈：容器上移 0.4444rem，圆环自身下移 0.1667rem。 */
+    margin-top: var(--dan-connection-offset-y);
+    margin-left: var(--dan-connection-margin-left);
+    margin-right: var(--dan-connection-margin-right);
     pointer-events: auto;
     background: url("fs://game/f1rstdan-cool-ui/textures/dan_city_connectivity_circle_bg.png") center / contain no-repeat;
 }
