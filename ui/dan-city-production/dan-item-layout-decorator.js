@@ -31,6 +31,43 @@ styleElement.innerHTML = `
         height: 1.3rem;
         margin-right: 0rem;
     }
+    /* 1.5 Solid 条目：只压缩尺寸，不移动由组件管理的节点。 */
+    production-chooser-item.dan-compact-production {
+        margin-bottom: 0.2222222222rem;
+        line-height: 125%;
+    }
+    .dan-compact-production > [data-name="ProductionChooserItem"] > .hud_sidepanel_list-bg-no-fill {
+        padding: 0.16rem 0.22rem;
+    }
+    .dan-compact-production .hud_sidepanel_list-bg-no-fill > .items-stretch > .size-16 {
+        width: 2.4rem;
+        height: 2.4rem;
+        align-self: center;
+    }
+    .dan-compact-production .hud_sidepanel_list-bg-no-fill > .items-stretch > .justify-between {
+        padding-top: 0;
+        padding-bottom: 0;
+        justify-content: center;
+    }
+    .dan-compact-production .hud_sidepanel_list-bg-no-fill .size-8 {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+    .dan-compact-production .hud_sidepanel_list-bg-no-fill .min-h-9 {
+        min-height: 1.25rem;
+    }
+    .dan-compact-production .hud_sidepanel_list-bg-no-fill .my-1 {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+    .dan-maintenance .size-6 {
+        width: 1rem;
+        height: 1rem;
+    }
+    .dan-total-production-cost {
+        margin-left: 0.22rem;
+        margin-right: 0.22rem;
+    }
 `;
 document.head.appendChild(styleElement);
 
@@ -111,7 +148,8 @@ export class DanProductionItemDecorator {
     }
 
     beforeDetach() {
-        // 清理资源
+        if (this.solidRefreshFrame) cancelAnimationFrame(this.solidRefreshFrame);
+        this.solidRefreshFrame = null;
     }
 
     afterDetach() {
@@ -121,12 +159,36 @@ export class DanProductionItemDecorator {
 
     // #region 核心功能方法
 
+    // Solid 拥有这些节点；只在稳定容器里挂载 MOD 自己的子节点。
+    getSolidItemParts() {
+        const row = this.item.Root.querySelector('[data-name="ProductionChooserItem"] > .hud_sidepanel_list-bg-no-fill > .items-stretch');
+        const main = row?.querySelector('.justify-between');
+        return {
+            details: main?.querySelector('.production-chooser__font-icon-positioning') || main?.querySelector('.text-sm'),
+            cost: row?.lastElementChild?.querySelector('.flex-row.items-center.self-end')
+        };
+    }
+
+    refreshSolidItem() {
+        if (this.isDisplayMaintenance) this.refreshMaintenance();
+        else this.item.maintenanceElement?.classList.add('hidden');
+        if (this.isDisplayProductionCost) this.refreshProductionCost();
+        else this.item.productionCostContainer?.classList.add('hidden');
+        if (this.item.quickBuyButton) UpdateQuickBuyItem(this.item.quickBuyButton);
+    }
+
     /**
      * 应用自定义布局和样式
      * 重组DOM结构以优化显示效果
      */
     applyCustomLayout() {
         if (!this.item.Root) return;
+
+        // 新版使用 Solid 渲染，没有旧组件的 container 等字段。
+        if (this.item.Root.querySelector('[data-name="ProductionChooserItem"]')) {
+            this.item.Root.classList.add('dan-compact-production');
+            return;
+        }
 
         // 1. 调整根元素和容器样式
         this.updateClassList(this.item.Root, ['text-sm'], ['text-xs', 'leading-tight']);
@@ -257,16 +319,16 @@ export class DanProductionItemDecorator {
         // 1. 获取目标父容器
         // 单位 -> secondaryDetailsElement
         // 建筑 -> itemBaseYieldsElement (优先) 或 alternateYieldElement
-        const targetParent = isUnit 
+        const targetParent = (isUnit
             ? this.item.secondaryDetailsElement 
-            : (this.item.itemBaseYieldsElement || this.item.alternateYieldElement);
+            : (this.item.itemBaseYieldsElement || this.item.alternateYieldElement)) || this.getSolidItemParts().details;
 
         if (!targetParent) return;
 
         // 2. 确保维护费容器存在
         if (!this.item.maintenanceElement) {
              this.item.maintenanceElement = document.createElement('span');
-             this.item.maintenanceElement.className = 'flex px-1 hidden';
+             this.item.maintenanceElement.className = 'dan-maintenance flex px-1 hidden';
              this.item.maintenanceElement.style.setProperty("color", "#ffc8c8");
         }
 
@@ -365,6 +427,7 @@ export class DanProductionItemDecorator {
      * 刷新生产力花费显示
      */
     refreshProductionCost() {
+        const costContainer = this.item.costContainer || this.getSolidItemParts().cost;
         // 1. 确保容器存在 (如果是首次且未通过layout创建，例如layout未开启但开启了花费显示)
         if (!this.item.productionCostContainer) {
              this.createCustomElement('productionCostContainer', 'span', 'flex items-center mx-3 production-chooser-tooltip__subtext-bg rounded hidden');
@@ -381,6 +444,12 @@ export class DanProductionItemDecorator {
                 }
              }
         }
+
+        // Solid 更新属性时可能替换子节点，每次刷新都确认挂载位置。
+        if (costContainer && !costContainer.contains(this.item.productionCostContainer)) {
+            costContainer.insertBefore(this.item.productionCostContainer, costContainer.firstChild);
+        }
+        this.item.productionCostContainer.classList.add('dan-total-production-cost');
 
         const element = this.item.Root;
         const type = element.getAttribute('data-type');
@@ -425,6 +494,17 @@ export class DanProductionItemDecorator {
      */
     handleAttributeChanged(name, oldValue, newValue) {
         if (newValue === oldValue) return;
+
+        if (this.item.Root.querySelector('[data-name="ProductionChooserItem"]')) {
+            if (['data-type', 'data-category', 'data-cost', 'data-is-purchase', 'data-secondary-details', 'data-base-yields', 'data-info-display-type'].includes(name)) {
+                if (this.solidRefreshFrame) cancelAnimationFrame(this.solidRefreshFrame);
+                this.solidRefreshFrame = requestAnimationFrame(() => {
+                    this.solidRefreshFrame = null;
+                    if (this.item.Root.isConnected) this.refreshSolidItem();
+                });
+            }
+            return;
+        }
 
         switch (name) {
             case 'data-cost':

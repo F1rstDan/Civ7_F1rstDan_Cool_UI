@@ -397,7 +397,8 @@ export class QuickBuyItem extends FxsChooserItem {
     
     onAttach() {
         // 添加快速购买按钮事件监听器
-        this.Root.addEventListener('chooser-item-selected', (event) => { this.onButtonActivated(event); });
+        this.buttonActivatedListener ??= (event) => this.onButtonActivated(event);
+        this.Root.addEventListener('chooser-item-selected', this.buttonActivatedListener);
         // 添加鼠标悬停监听器以延迟加载 tooltip 数据
         this.Root.addEventListener('mouseenter', this.onMouseEnter);
         super.onAttach();
@@ -405,7 +406,7 @@ export class QuickBuyItem extends FxsChooserItem {
     
     onDetach() {
         // 移除快速购买按钮的点击事件监听器
-        this.Root.removeEventListener('chooser-item-selected', this.onButtonActivated);
+        if (this.buttonActivatedListener) this.Root.removeEventListener('chooser-item-selected', this.buttonActivatedListener);
         this.Root.removeEventListener('mouseenter', this.onMouseEnter);
         super.onDetach();
     }

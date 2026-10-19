@@ -1,11 +1,29 @@
 import { getUserModOptions } from '/f1rstdan-cool-ui/ui/options/f1rstdan-cool-ui-options.js';
 import { DanCityData } from '/f1rstdan-cool-ui/ui/dan-city-banners/dan-city-custom-data.js';
+import { ComponentRegistry } from '/core/ui-next/services/component-registry.js';
+import { onMount, onCleanup } from '/core/vendor/solid-js/dist/solid.js';
+import TooltipManager from '/core/ui/tooltips/tooltip-manager.js';
+import '/base-standard/ui-next/screens/city-banners/city-banner.js';
 
 const styleElement = document.createElement('style');
 styleElement.innerHTML = `
 .dan-default-tooltip-hide .tooltip{
     opacity: 0;
     display: none !important;
+}
+.dan-banner-connection {
+    display: flex;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    margin-left: 0.22rem;
+    margin-right: 0.22rem;
+    pointer-events: auto;
+    background: url("fs://game/f1rstdan-cool-ui/textures/dan_city_connectivity_circle_bg.png") center / contain no-repeat;
 }
 `;
 document.head.appendChild(styleElement);
@@ -300,3 +318,109 @@ export class DanCityBannersDecorator {
 }
 
 Controls.decorate('city-banner', (component) => new DanCityBannersDecorator(component));
+
+// 1.5 的横幅由 Solid 创建。保留当前工厂（包括其他 MOD 的覆盖），只添加信息。
+export class DanSolidCityBanner {
+    static events = [
+        'CityInitialized', 'CityRemovedFromMap', 'CityNameChanged',
+        'CityPopulationChanged', 'CityYieldChanged', 'CityGrowthModeChanged',
+        'FoodQueueChanged', 'CityGovernmentLevelChanged', 'PlayerTurnActivated',
+        'TradeRouteAddedToMap', 'TradeRouteRemovedFromMap', 'TradeRouteChanged'
+    ];
+
+    constructor(root, cityID) {
+        this.root = root;
+        this.cityID = cityID;
+        this.population = root.querySelector('.city-banner__population-container');
+        this.connection = document.createElement('div');
+        this.connection.className = 'dan-banner-connection font-body-xs text-white dan-tooltip';
+        this.connection.setAttribute('data-tooltip-style', 'dan-city-yields-tooltip');
+        this.population.parentNode.insertBefore(this.connection, this.population.nextSibling);
+        this.population.classList.add('dan-tooltip');
+        this.previousStyle = this.population.getAttribute('data-tooltip-style');
+        this.population.setAttribute('data-tooltip-style', 'dan-city-yields-tooltip');
+        // 拦截新版人口提示的鼠标入口，避免同时弹出两个提示框。
+        this.blockNativeTooltip = event => event.stopImmediatePropagation();
+        this.population.addEventListener('mouseover', this.blockNativeTooltip, true);
+        this.refresh = () => {
+            if (this.refreshFrame) return;
+            this.refreshFrame = requestAnimationFrame(() => {
+                this.refreshFrame = null;
+                this.update();
+            });
+        };
+        DanSolidCityBanner.events.forEach(event => engine.on(event, this.refresh));
+        root.danBannerAdapter = this;
+        this.update();
+    }
+
+    bindTooltip(target, type, city) {
+        const data = DanCityData.getData(type, city);
+        Object.assign(target, { type, city, yieldData: data, label: data.label, value: data.value, isBanner: true });
+        const tooltip = TooltipManager.types['dan-city-yields-tooltip'];
+        if (tooltip?.target === target) tooltip.target = null;
+        return data;
+    }
+
+    update() {
+        const city = Cities.get(this.cityID);
+        if (!city) return;
+        // Solid 可保留横幅根节点而重建内部内容，需重新绑定新的人口节点。
+        if (!this.observer) {
+            this.observer = new MutationObserver(() => {
+                const population = this.root.querySelector('.city-banner__population-container');
+                if (population && (population !== this.population || !this.root.contains(this.connection))) this.refresh();
+            });
+            this.observer.observe(this.root, { childList: true, subtree: true });
+        }
+        const population = this.root.querySelector('.city-banner__population-container');
+        if (!population) return;
+        if (population !== this.population) {
+            this.restorePopulation();
+            this.population = population;
+            this.previousStyle = population.getAttribute('data-tooltip-style');
+            population.classList.add('dan-tooltip');
+            population.setAttribute('data-tooltip-style', 'dan-city-yields-tooltip');
+            population.addEventListener('mouseover', this.blockNativeTooltip, true);
+        }
+        if (!this.root.contains(this.connection)) {
+            population.parentNode.insertBefore(this.connection, population.nextSibling);
+        }
+        this.bindTooltip(this.population, 'DAN_CITY_POPULATION', city);
+        const data = this.bindTooltip(this.connection, 'DAN_CITY_CONNECTIVITY', city);
+        this.connection.textContent = data.value;
+        this.connection.setAttribute('aria-label', `${data.label} ${data.value}`);
+        this.connection.style.display = getUserModOptions().cityBannerDisplayConnectionInfo ? 'flex' : 'none';
+    }
+
+    restorePopulation() {
+        this.population.removeEventListener('mouseover', this.blockNativeTooltip, true);
+        this.population.classList.remove('dan-tooltip');
+        if (this.previousStyle === null) this.population.removeAttribute('data-tooltip-style');
+        else this.population.setAttribute('data-tooltip-style', this.previousStyle);
+    }
+
+    dispose() {
+        this.observer?.disconnect();
+        if (this.refreshFrame) cancelAnimationFrame(this.refreshFrame);
+        DanSolidCityBanner.events.forEach(event => engine.off(event, this.refresh));
+        this.restorePopulation();
+        this.connection.remove();
+        delete this.root.danBannerAdapter;
+    }
+}
+
+const solidBanner = ComponentRegistry.get('CityBanner');
+const originalSolidBanner = solidBanner.factory();
+solidBanner.setFactory(() => props => {
+    const result = originalSolidBanner(props);
+    let adapter;
+    onMount(() => {
+        const root = typeof result === 'function' ? result() : result;
+        if (props.cityID.owner === GameContext.localPlayerID && root instanceof HTMLElement && root.querySelector('.city-banner__population-container')) {
+            adapter = new DanSolidCityBanner(root, props.cityID);
+        }
+    });
+    onCleanup(() => adapter?.dispose());
+    return result;
+});
