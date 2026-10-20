@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 要发布的已有版本标签，例如 v1.9.7
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -16,13 +22,14 @@ jobs:
       - name: 检出版本提交
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
           persist-credentials: false
 
       - name: 校验版本并打包
         id: package
         shell: python
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
           import os
           import re
@@ -88,7 +95,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
           ARCHIVE_PATH: ${{ steps.package.outputs.archive }}
           NOTES_PATH: ${{ steps.package.outputs.notes }}
         run: |
