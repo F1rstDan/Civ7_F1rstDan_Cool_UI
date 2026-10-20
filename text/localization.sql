@@ -10,6 +10,7 @@
 --========================================================================================================================
 -- Chinese (Simplified)'zh_Hans_CN': 原文 Original
 -- English 'en_US': AI translation and corrections.
+-- Spanish 'es_ES': AI translation.
 -- Korean 'ko_KR': Thank you translator: @Hotsolidinfill (1.7.3)
 -- Russian 'ru_RU': Thank you translator: @Webrok (1.7.4)
 -- Other languages are translated by AI.
@@ -19,6 +20,7 @@ INSERT OR REPLACE INTO LocalizedText (Tag, Language, Text) VALUES
 ('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'zh_Hans_CN', '「高效・直观・美观 —— 一键速购 + 城市数据预览 + 极简 UI 设计，一目了然助力精准决策」'),
 ('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'zh_Hant_HK', '「高效・直觀・美觀 —— 一鍵速購 + 城市數據預覽 + 極簡 UI 設計，一目了然助力精準決策」'),
 ('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'en_US', 'Efficient · Intuitive · Aesthetic — One-Click Purchase + City Data Preview + Minimalist UI Design, At-a-Glance for Precise Decisions'),
+('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'es_ES', 'Eficiente · Intuitivo · Estético — Compra con un clic + Vista previa de los datos de la ciudad + Diseño de interfaz minimalista, todo de un vistazo para tomar decisiones precisas'),
 ('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'fr_FR', 'Efficace · Intuitif · Esthétique — Achat en un clic + Aperçu des données urbaines + Design UI minimaliste, Vue d''ensemble pour des décisions précises'),
 ('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'de_DE', 'Effizient · Intuitiv · Ästhetisch — Ein-Klick-Kauf + Stadtdatenvorschau + Minimalistisches UI-Design, Überblick für präzise Entscheidungen'),
 ('LOC_MOD_F1RSTDAN_COOL_UI_DESCRIPTION', 'it_IT', 'Efficiente · Intuitivo · Estetico — Acquisto con un clic + Anteprima dati città + Design UI minimalista, Visione d''insieme per decisioni precise'),
@@ -32,6 +34,7 @@ INSERT OR REPLACE INTO LocalizedText (Tag, Language, Text) VALUES
 ('LOC_OPTIONS_GROUP_F1RSTDAN_MODS', 'zh_Hans_CN', '「F1rstDan」的模组配置'),
 ('LOC_OPTIONS_GROUP_F1RSTDAN_MODS', 'zh_Hant_HK', '「F1rstDan」的模組配置'),
 ('LOC_OPTIONS_GROUP_F1RSTDAN_MODS', 'en_US', 'F1rstDan''s mods'),
+('LOC_OPTIONS_GROUP_F1RSTDAN_MODS', 'es_ES', 'Mods de F1rstDan'),
 ('LOC_OPTIONS_GROUP_F1RSTDAN_MODS', 'fr_FR', 'Mods de F1rstDan'),
 ('LOC_OPTIONS_GROUP_F1RSTDAN_MODS', 'de_DE', 'Mods von F1rstDan'),
 ('LOC_OPTIONS_GROUP_F1RSTDAN_MODS', 'it_IT', 'Mod di F1rstDan'),
@@ -45,6 +48,7 @@ INSERT OR REPLACE INTO LocalizedText (Tag, Language, Text) VALUES
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT', 'zh_Hans_CN', '城市-生产项 • 启用紧凑版布局样式 [STYLE:text-secondary]▄ → ▂[/STYLE]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT', 'zh_Hant_HK', '城市-生產項 • 啟用緊湊版佈局樣式 [STYLE:text-secondary]▄ → ▂[/STYLE]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT', 'en_US', 'City - Production Item • Enable Compact Layout Style [STYLE:text-secondary]▄ → ▂[/STYLE]'),
+('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT', 'es_ES', 'Ciudad - Elemento de producción • Activar el estilo de diseño compacto [STYLE:text-secondary]▄ → ▂[/STYLE]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT', 'fr_FR', 'Ville - Élément de production • Activer le style de mise en page compact [STYLE:text-secondary]▄ → ▂[/STYLE]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT', 'de_DE', 'Stadt - Produktionselement • Kompakten Layoutstil aktivieren [STYLE:text-secondary]▄ → ▂[/STYLE]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT', 'it_IT', 'Città - Elemento di produzione • Abilita stile layout compatto [STYLE:text-secondary]▄ → ▂[/STYLE]'),
@@ -58,6 +62,7 @@ INSERT OR REPLACE INTO LocalizedText (Tag, Language, Text) VALUES
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT_DESCRIPTION', 'zh_Hans_CN', '启用紧凑版布局样式，可使城市生产项在界面上同时展示更多条目，提升展示效率。 '),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT_DESCRIPTION', 'zh_Hant_HK', '啟用緊湊版佈局樣式，可使城市生產項在界面上同時展示更多條目，提升展示效率。 '),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT_DESCRIPTION', 'en_US', 'Enabling the compact layout style allows urban production items to display more items on the interface at the same time, increasing the conversion rate of exposure.'),
+('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT_DESCRIPTION', 'es_ES', 'Activar el estilo de diseño compacto permite mostrar más elementos de producción de la ciudad a la vez en la interfaz y mejora la eficiencia de visualización.'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT_DESCRIPTION', 'fr_FR', 'L''activation du style de mise en page compact permet aux éléments de production urbaine d''afficher plus d''articles sur l''interface en même temps, augmentant ainsi le taux de conversion de l''exposition.'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT_DESCRIPTION', 'de_DE', 'Die Aktivierung des kompakten Layoutstils ermöglicht es, mehr städtische Produktionselemente gleichzeitig auf der Oberfläche anzuzeigen, wodurch die Konversionsrate der Anzeige erhöht wird.'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_APPLY_LAYOUT_DESCRIPTION', 'it_IT', 'Abilitare lo stile di layout compatto consente di visualizzare più elementi di produzione urbana sull''interfaccia contemporaneamente, aumentando il tasso di conversione dell''esposizione.'),
@@ -71,6 +76,7 @@ INSERT OR REPLACE INTO LocalizedText (Tag, Language, Text) VALUES
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE', 'zh_Hans_CN', '城市-生产项 • 显示维护费 [STYLE:text-negative]-[icon:YIELD_GOLD]-[icon:YIELD_HAPPINESS][/STYLE]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE', 'zh_Hant_HK', '城市-生產項 • 顯示維護費 [STYLE:text-negative]-[icon:YIELD_GOLD]-[icon:YIELD_HAPPINESS][/STYLE]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE', 'en_US', 'City - Production Item • Display Maintenance [STYLE:text-negative]-[icon:YIELD_GOLD]-[icon:YIELD_HAPPINESS][/STYLE]'),
+('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE', 'es_ES', 'Ciudad - Elemento de producción • Mostrar mantenimiento [STYLE:text-negative]-[icon:YIELD_GOLD]-[icon:YIELD_HAPPINESS][/STYLE]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE', 'fr_FR', 'Ville - Élément de production • Afficher l''entretien [STYLE:text-negative]-[icon:YIELD_GOLD]-[icon:YIELD_HAPPINESS][/STYLE]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE', 'de_DE', 'Stadt - Produktionselement • Wartungskosten anzeigen [STYLE:text-negative]-[icon:YIELD_GOLD]-[icon:YIELD_HAPPINESS][/STYLE]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE', 'it_IT', 'Città - Elemento di produzione • Visualizza manutenzione [STYLE:text-negative]-[icon:YIELD_GOLD]-[icon:YIELD_HAPPINESS][/STYLE]'),
@@ -84,6 +90,7 @@ INSERT OR REPLACE INTO LocalizedText (Tag, Language, Text) VALUES
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE_DESCRIPTION', 'zh_Hans_CN', '将「每回合维护费」显示于「建筑收益」或「单位属性」之后。'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE_DESCRIPTION', 'zh_Hant_HK', '將「每回合維護費」顯示於「建築收益」或「單位屬性」之後。'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE_DESCRIPTION', 'en_US', 'Display "Maintenance Cost Per Round" after "Building Revenue" or "Unit Attributes".'),
+('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE_DESCRIPTION', 'es_ES', 'Mostrar el "coste de mantenimiento por turno" después del "rendimiento del edificio" o de los "atributos de la unidad".'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE_DESCRIPTION', 'fr_FR', 'Afficher "Coût d''entretien par tour" après "Revenus du bâtiment" ou "Attributs de l''unité".'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE_DESCRIPTION', 'de_DE', 'Zeigt "Wartungskosten pro Runde" nach "Gebäudeertrag" oder "Einheitenattributen" an.'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_MAINTENANCE_DESCRIPTION', 'it_IT', 'Visualizza "Costo di manutenzione per turno" dopo "Rendimento dell''edificio" o "Attributi dell''unità".'),
@@ -97,6 +104,7 @@ INSERT OR REPLACE INTO LocalizedText (Tag, Language, Text) VALUES
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_PRODUCTION_COST', 'zh_Hans_CN', '城市-生产项 • 显示生产力成本[icon:YIELD_PRODUCTION]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_PRODUCTION_COST', 'zh_Hant_HK', '城市-生產項 • 顯示生產力成本[icon:YIELD_PRODUCTION]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_PRODUCTION_COST', 'en_US', 'City - Production Items • Display Productivity Costs[icon:YIELD_PRODUCTION]'),
+('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_PRODUCTION_COST', 'es_ES', 'Ciudad - Elementos de producción • Mostrar costes de producción[icon:YIELD_PRODUCTION]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_PRODUCTION_COST', 'fr_FR', 'Ville - Éléments de production • Afficher les coûts de productivité[icon:YIELD_PRODUCTION]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_PRODUCTION_COST', 'de_DE', 'Stadt - Produktionselemente • Produktivitätskosten anzeigen[icon:YIELD_PRODUCTION]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_PRODUCTION_COST', 'it_IT', 'Città - Elementi di produzione • Visualizza costi di produttività[icon:YIELD_PRODUCTION]'),
@@ -110,6 +118,7 @@ INSERT OR REPLACE INTO LocalizedText (Tag, Language, Text) VALUES
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_PRODUCTION_COST_DESCRIPTION', 'zh_Hans_CN', '将「所需生产力成本」显示于「生产所需回合数」或「生产所需资金」之前。 '),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_PRODUCTION_COST_DESCRIPTION', 'zh_Hant_HK', '將「所需生產力成本」顯示於「生產所需回合數」或「生產所需資金」之前。 '),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_PRODUCTION_COST_DESCRIPTION', 'en_US', 'Display "Required Productivity Cost" before "Production Required Round" or "Production Required Money".'),
+('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_PRODUCTION_COST_DESCRIPTION', 'es_ES', 'Mostrar el "coste de producción requerido" antes de los "turnos necesarios para producir" o del "Oro necesario para la compra".'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_PRODUCTION_COST_DESCRIPTION', 'fr_FR', 'Afficher "Coût de productivité requis" avant "Tour requis pour la production" ou "Argent requis pour la production".'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_PRODUCTION_COST_DESCRIPTION', 'de_DE', 'Zeigt "Erforderliche Produktivitätskosten" vor "Erforderliche Produktionsrunde" oder "Erforderliches Produktionsgeld" an.'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_PRODUCTION_ITEM_DISPLAY_PRODUCTION_COST_DESCRIPTION', 'it_IT', 'Visualizza "Costo di produttività richiesto" prima di "Turno richiesto per la produzione" o "Denaro richiesto per la produzione".'),
@@ -123,6 +132,7 @@ INSERT OR REPLACE INTO LocalizedText (Tag, Language, Text) VALUES
 ('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO', 'zh_Hans_CN', '城市横幅 • 显示城市连接信息[icon:DAN_ICON_CITY_CONNECTION_BG]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO', 'zh_Hant_HK', '城市橫幅 • 顯示城市連接資訊[icon:DAN_ICON_CITY_CONNECTION_BG]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO', 'en_US', 'City Banner • Display City Connection Info[icon:DAN_ICON_CITY_CONNECTION_BG]'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO', 'es_ES', 'Estandarte de la ciudad • Mostrar información de conexión de la ciudad[icon:DAN_ICON_CITY_CONNECTION_BG]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO', 'fr_FR', 'Bannière de la ville • Afficher les informations de connexion de la ville[icon:DAN_ICON_CITY_CONNECTION_BG]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO', 'de_DE', 'Stadt-Banner • Anzeigen der Stadtverbindungsinformationen[icon:DAN_ICON_CITY_CONNECTION_BG]'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO', 'it_IT', 'Banniere della città • Visualizza le informazioni di connessione della città[icon:DAN_ICON_CITY_CONNECTION_BG]'),
@@ -136,6 +146,7 @@ INSERT OR REPLACE INTO LocalizedText (Tag, Language, Text) VALUES
 ('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO_DESCRIPTION', 'zh_Hans_CN', '将「城市连接信息」显示于城市横幅中。'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO_DESCRIPTION', 'zh_Hant_HK', '將「城市連接資訊」顯示於城市橫幅中。'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO_DESCRIPTION', 'en_US', 'Display "City Connection Info" in the City Banner.'),
+('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO_DESCRIPTION', 'es_ES', 'Mostrar la "información de conexión de la ciudad" en el estandarte de la ciudad.'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO_DESCRIPTION', 'fr_FR', 'Afficher "Informations de connexion de la ville" dans la bannière de la ville.'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO_DESCRIPTION', 'de_DE', 'Zeigt "Informationen über die Stadtverbindung" im Stadtbanner an.'),
 ('LOC_OPTIONS_F1RSTDAN_CITY_BANNER_DISPLAY_CONNECTION_INFO_DESCRIPTION', 'it_IT', 'Visualizza "Informazioni di connessione della città" nella banniere della città.'),

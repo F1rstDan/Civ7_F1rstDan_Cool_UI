@@ -7,10 +7,6 @@ import '/base-standard/ui-next/screens/city-banners/city-banner.js';
 
 const styleElement = document.createElement('style');
 styleElement.innerHTML = `
-.dan-default-tooltip-hide .tooltip{
-    opacity: 0;
-    display: none !important;
-}
 .dan-banner-connection {
     /* 城市连通性金圈：手动微调以下参数即可。 */
     --dan-connection-size: 2rem;           /* 圆圈直径。 */
@@ -92,9 +88,7 @@ const DanCityBannersULL = {
             city: component.city,
             elements: component.elements,
             banner: component.elements.container,
-            populationCircle: component.Root.querySelector(".city-banner__population-container"),
-            growthQueueMeter: component.elements.growthQueueMeter,
-            popCount: component.elements.popCount
+            populationCircle: component.Root.querySelector(".city-banner__population-container")
         };
     },
 
@@ -198,54 +192,13 @@ const DanCityBannersURL = {
         } else {
             connectivityCircle.classList.add('hidden');
         }
-    },
-
-    /**
-     * 初始化人口 Tooltip
-     */
-    initPopulationTooltip(context) {
-        if (!context || !context.populationCircle) return;
-        const { populationCircle, popCount, city } = context;
-
-        populationCircle.classList.add('dan-tooltip');
-        populationCircle.setAttribute('data-tooltip-style', 'dan-city-yields-tooltip');
-        // 隐藏默认的 tooltip ，没找到怎么隐藏，只能把位置偏移到看不到的地方
-        populationCircle.setAttribute("data-tooltip-content", "F1rstDan's Cool UI");
-        populationCircle.setAttribute('data-tooltip-anchor', "top");
-        populationCircle.setAttribute('data-tooltip-anchor-offset', "11111");
-        
-        // 去取子元素的鼠标指针属性auto 设置成pointer-events-none
-        if (popCount) {
-            popCount.removeAttribute("pointer-events-auto");
-            popCount.setAttribute("pointer-events-none", "");
-        }
-
-        populationCircle.type = 'DAN_CITY_POPULATION';
-        populationCircle.label = Locale.toUpper(Locale.compose("LOC_UI_CITY_INTERACT_CURENT_POPULATION_HEADER"));
-        populationCircle.value = -1;
-        populationCircle.isBanner = true;
-        populationCircle.city = city;
-    },
-
-    /**
-     * 更新人口数据（主要更新绑定到 DOM 上的属性）
-     */
-    updatePopulation(context, data) {
-        if (!context || !context.populationCircle) return;
-        if (!data) return;
-        
-        if (data.value) {
-            context.populationCircle.value = data.value;
-        }
     }
 };
 
 export class DanCityBannersDecorator {
     constructor(component) {
         this.component = component;
-        // 给人口添加事件监听器
-        this.observerPopulation = new MutationObserver(this.updatePopulationData.bind(this));
-        
+
         // 添加防抖功能，更新城市连接数据
         this.updateConnectivityData = this.debounce(this.updateConnectivityData.bind(this), 300);
     }
@@ -261,13 +214,6 @@ export class DanCityBannersDecorator {
     }
 
     beforeAttach() {
-        const context = DanCityBannersULL.getContext(this.component);
-        // Hook up to growthQueueMeter's updates
-        if (context && context.growthQueueMeter) {
-            const observerPopulationConfig = { attributes: true, attributeFilter: ['value', 'max-value'] };
-            this.observerPopulation.observe(context.growthQueueMeter, observerPopulationConfig);
-        }
-        
         // 注册全局事件监听
         DanCityBannersDAL.registerEvents(this.updateConnectivityData);
     }
@@ -282,10 +228,6 @@ export class DanCityBannersDecorator {
                 DanCityBannersURL.initConnectivityLayout(context, DanCityBannersULL.createCustomElement);
                 this.updateConnectivityData();
             }
-
-            // 应用人口的 Tooltip
-            DanCityBannersURL.initPopulationTooltip(context);
-            this.updatePopulationData();
             
         } catch (error) {
             console.error('F1rstDan DanCityBannersDecorator afterAttach error:', error);
@@ -296,8 +238,6 @@ export class DanCityBannersDecorator {
     }
 
     afterDetach() {
-        // 移除人口事件监听器
-        this.observerPopulation.disconnect();
         // 移除所有事件监听器
         DanCityBannersDAL.unregisterEvents(this.updateConnectivityData);
         
@@ -314,14 +254,6 @@ export class DanCityBannersDecorator {
         const data = DanCityData.getData('DAN_CITY_CONNECTIVITY', this.component.city);
         DanCityBannersURL.updateConnectivity(context, data);
     }
-
-    updatePopulationData() {
-        const context = DanCityBannersULL.getContext(this.component);
-        if (!context) return;
-
-        const data = DanCityData.getData('DAN_CITY_POPULATION', this.component.city);
-        DanCityBannersURL.updatePopulation(context, data);
-    }
 }
 
 Controls.decorate('city-banner', (component) => new DanCityBannersDecorator(component));
@@ -330,7 +262,7 @@ Controls.decorate('city-banner', (component) => new DanCityBannersDecorator(comp
 export class DanSolidCityBanner {
     static events = [
         'CityInitialized', 'CityRemovedFromMap', 'CityNameChanged',
-        'CityPopulationChanged', 'CityYieldChanged', 'CityGrowthModeChanged',
+        'CityYieldChanged', 'CityGrowthModeChanged',
         'FoodQueueChanged', 'CityGovernmentLevelChanged', 'PlayerTurnActivated',
         'TradeRouteAddedToMap', 'TradeRouteRemovedFromMap', 'TradeRouteChanged'
     ];
@@ -343,12 +275,6 @@ export class DanSolidCityBanner {
         this.connection.className = 'dan-banner-connection font-body-xs text-white dan-tooltip';
         this.connection.setAttribute('data-tooltip-style', 'dan-city-yields-tooltip');
         this.population.parentNode.insertBefore(this.connection, this.population.nextSibling);
-        this.population.classList.add('dan-tooltip');
-        this.previousStyle = this.population.getAttribute('data-tooltip-style');
-        this.population.setAttribute('data-tooltip-style', 'dan-city-yields-tooltip');
-        // 拦截新版人口提示的鼠标入口，避免同时弹出两个提示框。
-        this.blockNativeTooltip = event => event.stopImmediatePropagation();
-        this.population.addEventListener('mouseover', this.blockNativeTooltip, true);
         this.refresh = () => {
             if (this.refreshFrame) return;
             this.refreshFrame = requestAnimationFrame(() => {
@@ -372,46 +298,35 @@ export class DanSolidCityBanner {
     update() {
         const city = Cities.get(this.cityID);
         if (!city) return;
-        // Solid 可保留横幅根节点而重建内部内容，需重新绑定新的人口节点。
+        // Solid 可保留横幅根节点而重建内部内容，需重新找到人口圆圈作为连通性圆圈的挂载锚点。
         if (!this.observer) {
             this.observer = new MutationObserver(() => {
                 const population = this.root.querySelector('.city-banner__population-container');
-                if (population && (population !== this.population || !this.root.contains(this.connection))) this.refresh();
+                if (!population) return;
+                if (population !== this.population ||
+                    !this.root.contains(this.connection) ||
+                    population.nextSibling !== this.connection) {
+                    this.refresh();
+                }
             });
             this.observer.observe(this.root, { childList: true, subtree: true });
         }
         const population = this.root.querySelector('.city-banner__population-container');
         if (!population) return;
-        if (population !== this.population) {
-            this.restorePopulation();
-            this.population = population;
-            this.previousStyle = population.getAttribute('data-tooltip-style');
-            population.classList.add('dan-tooltip');
-            population.setAttribute('data-tooltip-style', 'dan-city-yields-tooltip');
-            population.addEventListener('mouseover', this.blockNativeTooltip, true);
-        }
-        if (!this.root.contains(this.connection)) {
+        this.population = population;
+        if (!this.root.contains(this.connection) || population.nextSibling !== this.connection) {
             population.parentNode.insertBefore(this.connection, population.nextSibling);
         }
-        this.bindTooltip(this.population, 'DAN_CITY_POPULATION', city);
         const data = this.bindTooltip(this.connection, 'DAN_CITY_CONNECTIVITY', city);
         this.connection.textContent = data.value;
         this.connection.setAttribute('aria-label', `${data.label} ${data.value}`);
         this.connection.style.display = getUserModOptions().cityBannerDisplayConnectionInfo ? 'flex' : 'none';
     }
 
-    restorePopulation() {
-        this.population.removeEventListener('mouseover', this.blockNativeTooltip, true);
-        this.population.classList.remove('dan-tooltip');
-        if (this.previousStyle === null) this.population.removeAttribute('data-tooltip-style');
-        else this.population.setAttribute('data-tooltip-style', this.previousStyle);
-    }
-
     dispose() {
         this.observer?.disconnect();
         if (this.refreshFrame) cancelAnimationFrame(this.refreshFrame);
         DanSolidCityBanner.events.forEach(event => engine.off(event, this.refresh));
-        this.restorePopulation();
         this.connection.remove();
         delete this.root.danBannerAdapter;
     }

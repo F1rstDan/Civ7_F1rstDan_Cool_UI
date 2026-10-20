@@ -63,16 +63,50 @@ styleElement.innerHTML = `
         margin-top: 0;
         margin-bottom: 0;
     }
-    /* Gameface 不支持 Grid；在标签容器内用 Flex 排列官方推荐组件。 */
-    .dan-compact-production .dan-production-top-row {
+    /* 名称行：名称、无时代限制、顾问推荐图标依次排列。 */
+    .dan-compact-production .dan-name-row {
         display: flex;
         flex-direction: row;
         align-items: center;
-        justify-content: flex-end;
+    }
+    .dan-compact-production .dan-name-row .dan-ageless {
+        align-self: center;
+        flex-shrink: 0;
+        margin-left: 0.35rem;
+    }
+    .dan-compact-production .dan-name-row .dan-ageless > div {
+        min-height: 1.1rem;
+        padding-left: 0.3rem;
+        padding-right: 0.3rem;
+        font-size: 0.75rem;
+        line-height: 1.1;
+    }
+    .dan-compact-production .dan-name-row .dan-top-recommendations {
+        margin-left: 0.15rem;
     }
     .dan-top-recommendations {
         display: flex;
         flex-shrink: 0;
+    }
+    /* 右列：默认垂直居中生产回合；有生产力成本时上下两行分布。 */
+    .dan-compact-production .hud_sidepanel_list-bg-no-fill > .items-stretch > .flex-col.justify-end {
+        justify-content: center;
+    }
+    .dan-compact-production .hud_sidepanel_list-bg-no-fill > .items-stretch > .flex-col.justify-end > .flex-auto {
+        flex-grow: 0;
+    }
+    .dan-compact-production .hud_sidepanel_list-bg-no-fill > .items-stretch > .flex-col.justify-end.dan-production-cost-visible {
+        justify-content: space-between;
+    }
+    .dan-compact-production .dan-production-cost-row {
+        align-self: flex-end;
+        flex-shrink: 0;
+        margin-left: 0;
+        margin-right: 0;
+    }
+    .dan-compact-production .dan-top-recommendations .size-6 {
+        width: 1rem;
+        height: 1rem;
     }
     .dan-compact-production.dan-top-recommendations-active .items-stretch > .justify-end > .flex-auto.self-end > .flex-row.items-center.self-end > .relative.font-body {
         display: none;
@@ -169,11 +203,13 @@ export class DanProductionItemDecorator {
         this.solidRefreshFrame = null;
         this.solidRecommendationsDispose?.();
         this.solidRecommendationsDispose = null;
-        this.solidRecommendationsElement?.parentElement?.classList.remove('dan-production-top-row');
         this.solidRecommendationsElement?.remove();
         this.solidRecommendationsElement = null;
         this.solidRecommendationsData = undefined;
         this.setSolidRecommendations = null;
+        this.getSolidItemParts().rightColumn?.classList.remove('dan-production-cost-visible');
+        this.item.productionCostContainer?.classList.remove('dan-production-cost-row');
+        this.restoreSolidNameRow();
         this.item.Root.classList.remove('dan-top-recommendations-active');
     }
 
@@ -184,22 +220,91 @@ export class DanProductionItemDecorator {
 
     // #region 核心功能方法
 
-    // Solid 拥有这些节点；只在稳定容器里挂载 MOD 自己的子节点。
+    // Solid 拥有这些节点：只移动稳定的容器节点，不往 Solid 负责的文本节点里插入内容。
     getSolidItemParts() {
         const row = this.item.Root.querySelector('[data-name="ProductionChooserItem"] > .hud_sidepanel_list-bg-no-fill > .items-stretch');
         const main = row?.querySelector('.justify-between');
+        const rightColumn = row?.lastElementChild;
+        const nameRow = main
+            ? Array.from(main.children).find(child => child.classList.contains('dan-name-row'))
+            : null;
+        const costWrapper = rightColumn
+            ? Array.from(rightColumn.children).find(child => child.classList.contains('flex-auto'))
+            : null;
         return {
+            main,
+            nameRow,
+            name: nameRow?.firstElementChild || main?.firstElementChild,
             details: main?.querySelector('.production-chooser__font-icon-positioning') || main?.querySelector('.text-sm'),
-            cost: row?.lastElementChild?.querySelector('.flex-row.items-center.self-end'),
-            header: row?.lastElementChild?.firstElementChild
+            rightColumn,
+            costWrapper,
+            cost: rightColumn?.querySelector('.flex-row.items-center.self-end'),
+            ageless: row?.querySelector('.dan-ageless') || (rightColumn
+                ? Array.from(rightColumn.children).find(child => child.classList.contains('self-end') && !child.classList.contains('flex-auto'))
+                : null)
         };
     }
 
-    refreshSolidRecommendations() {
-        const { header } = this.getSolidItemParts();
-        if (!header) return;
+    /**
+     * 把名称、“无时代限制”收进同一行，供顾问图标排在后面。
+     * 名称与徽章容器仍由 Solid 管理，这里只调整它们的挂载位置。
+     */
+    ensureSolidNameRow({ main, name, ageless }) {
+        if (!main || !name || !ageless) return null;
 
-        // 只挂载 MOD 自己的节点，避免搬移原节点后破坏 Solid 的动态更新。
+        let row = this.danNameRow;
+        if (!row || row.parentElement !== main) {
+            row = Array.from(main.children).find(child => child.classList.contains('dan-name-row')) || null;
+        }
+        if (!row) {
+            row = document.createElement('div');
+            row.className = 'dan-name-row flex items-center';
+            main.insertBefore(row, name);
+        }
+
+        this.danNameRow = row;
+        this.danNameElement = name;
+        this.danAgelessElement = ageless;
+
+        if (name.parentElement !== row) {
+            row.insertBefore(name, row.firstElementChild);
+        }
+        if (ageless.parentElement !== row || ageless.previousElementSibling !== name) {
+            row.insertBefore(ageless, name.nextSibling);
+        }
+        ageless.classList.add('dan-ageless');
+        return row;
+    }
+
+    /**
+     * 卸载时恢复官方节点位置，避免布局关闭后仍保留自定义行。
+     */
+    restoreSolidNameRow() {
+        const row = this.danNameRow;
+        const main = row?.parentElement;
+        const rightColumn = main?.nextElementSibling;
+        const name = this.danNameElement;
+        const ageless = this.danAgelessElement;
+
+        if (main && name && name.parentElement === row) {
+            main.insertBefore(name, main.firstElementChild);
+        }
+        if (rightColumn && ageless && ageless.parentElement === row) {
+            rightColumn.insertBefore(ageless, rightColumn.firstElementChild);
+        }
+        ageless?.classList.remove('dan-ageless');
+        row?.remove();
+
+        this.danNameRow = null;
+        this.danNameElement = null;
+        this.danAgelessElement = null;
+    }
+
+    refreshSolidRecommendations() {
+        const nameRow = this.ensureSolidNameRow(this.getSolidItemParts());
+        if (!nameRow) return;
+
+        // 推荐图标由 MOD 自有节点渲染，官方列表保留原位并由 CSS 隐藏。
         if (!this.solidRecommendationsElement) {
             this.solidRecommendationsElement = document.createElement('div');
             this.solidRecommendationsElement.className = 'dan-top-recommendations';
@@ -226,13 +331,12 @@ export class DanProductionItemDecorator {
         }
 
         // “无时代限制”切换时，Solid 可能清空标签容器，刷新后重新挂载。
-        if (this.solidRecommendationsElement.parentElement !== header) {
-            header.insertBefore(this.solidRecommendationsElement, header.firstChild);
+        if (this.solidRecommendationsElement.parentElement !== nameRow) {
+            nameRow.appendChild(this.solidRecommendationsElement);
         }
         // 与官方一致：没有有效费用时，不显示这一组推荐图标。
         const cost = Number(this.item.Root.getAttribute('data-cost') ?? '');
         this.solidRecommendationsElement.style.display = Number.isNaN(cost) || cost < 0 ? 'none' : 'flex';
-        header.classList.add('dan-production-top-row');
         this.item.Root.classList.add('dan-top-recommendations-active');
     }
 
@@ -241,7 +345,10 @@ export class DanProductionItemDecorator {
         if (this.isDisplayMaintenance) this.refreshMaintenance();
         else this.item.maintenanceElement?.classList.add('hidden');
         if (this.isDisplayProductionCost) this.refreshProductionCost();
-        else this.item.productionCostContainer?.classList.add('hidden');
+        else {
+            this.item.productionCostContainer?.classList.add('hidden');
+            this.updateProductionCostColumn();
+        }
         if (this.item.quickBuyButton) UpdateQuickBuyItem(this.item.quickBuyButton);
     }
 
@@ -492,11 +599,35 @@ export class DanProductionItemDecorator {
         }
     }
 
+    mountSolidProductionCostRow(parts = this.getSolidItemParts()) {
+        const { rightColumn, costWrapper } = parts;
+        const row = this.item.productionCostContainer;
+        if (!rightColumn || !costWrapper || !row) return;
+
+        row.classList.add('dan-production-cost-row');
+        if (row.parentElement !== rightColumn || row.nextElementSibling !== costWrapper) {
+            rightColumn.insertBefore(row, costWrapper);
+        }
+    }
+
+    updateProductionCostColumn() {
+        const { rightColumn } = this.getSolidItemParts();
+        if (!rightColumn) return;
+
+        const isVisible = this.isApplyLayout
+            && !!this.item.productionCostContainer
+            && !this.item.productionCostContainer.classList.contains('hidden');
+        rightColumn.classList.toggle('dan-production-cost-visible', isVisible);
+    }
+
     /**
      * 刷新生产力花费显示
      */
     refreshProductionCost() {
-        const costContainer = this.item.costContainer || this.getSolidItemParts().cost;
+        const isSolid = !!this.item.Root.querySelector('[data-name="ProductionChooserItem"]');
+        const parts = isSolid ? this.getSolidItemParts() : null;
+        const costContainer = this.item.costContainer || parts?.cost;
+
         // 1. 确保容器存在 (如果是首次且未通过layout创建，例如layout未开启但开启了花费显示)
         if (!this.item.productionCostContainer) {
              this.createCustomElement('productionCostContainer', 'span', 'flex items-center mx-3 production-chooser-tooltip__subtext-bg rounded hidden');
@@ -514,11 +645,14 @@ export class DanProductionItemDecorator {
              }
         }
 
-        // Solid 更新属性时可能替换子节点，每次刷新都确认挂载位置。
-        if (costContainer && !costContainer.contains(this.item.productionCostContainer)) {
+        this.item.productionCostContainer.classList.add('dan-total-production-cost');
+
+        // Solid 布局下，生产力成本单独占右列第一行；官方回合成本保留在第二行。
+        if (isSolid && this.isApplyLayout) {
+            this.mountSolidProductionCostRow(parts);
+        } else if (costContainer && !costContainer.contains(this.item.productionCostContainer)) {
             costContainer.insertBefore(this.item.productionCostContainer, costContainer.firstChild);
         }
-        this.item.productionCostContainer.classList.add('dan-total-production-cost');
 
         const element = this.item.Root;
         const type = element.getAttribute('data-type');
@@ -527,9 +661,8 @@ export class DanProductionItemDecorator {
 
         // 2. 判断是否显示
         if (isPurchase || category === ProductionPanelCategory.PROJECTS) {
-            if (this.item.productionCostContainer) {
-                this.item.productionCostContainer.classList.add('hidden');
-            }
+            this.item.productionCostContainer.classList.add('hidden');
+            this.updateProductionCostColumn();
             return;
         }
 
@@ -546,6 +679,7 @@ export class DanProductionItemDecorator {
             this.item.productionCostContainer.classList.add('hidden');
             element.removeAttribute('data-production-cost');
         }
+        this.updateProductionCostColumn();
     }
 
     _getProductionCost(city, type, category) {
