@@ -1,0 +1,99 @@
+name: 发布模组
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 检出版本提交
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: 校验版本并打包
+        id: package
+        shell: python
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          import os
+          import re
+          import subprocess
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          tag = os.environ['RELEASE_TAG']
+          if not re.fullmatch(r'v\d+\.\d+\.\d+[a-z]?', tag):
+              raise SystemExit(f'版本标签格式错误：{tag}')
+
+          manifest_name = 'f1rstdan-cool-ui.modinfo'
+          manifest = ET.parse(manifest_name).getroot()
+          ns = {'m': 'ModInfo'}
+          version = manifest.findtext('m:Properties/m:Version', namespaces=ns)
+          if manifest.get('version') != version or tag != f'v{version}':
+              raise SystemExit('标签与 modinfo 中的两处版本号不一致。')
+
+          for item in manifest.findall('.//m:Actions/*/m:Item', ns):
+              if not item.text or not Path(item.text).is_file():
+                  raise SystemExit(f'模组清单引用文件不存在：{item.text}')
+
+          changelog = Path('Changelog.md').read_text(encoding='utf-8-sig')
+          section = re.search(
+              rf'^## 版本：{re.escape(version)}[^\n]*\n(.*?)(?=^## |\Z)',
+              changelog, re.MULTILINE | re.DOTALL
+          )
+          if not section:
+              raise SystemExit(f'更新日志中未找到版本 {version}。')
+          notes = re.sub(r'^-{3,}\s*$', '', section.group(1), flags=re.MULTILINE).strip()
+          if not notes:
+              raise SystemExit('当前版本的更新说明为空。')
+
+          output_dir = Path(os.environ['RUNNER_TEMP'])
+          archive = output_dir / f'F1rstDans-Cool-UI-{tag}.zip'
+          notes_file = output_dir / 'release-notes.md'
+          prefix = "F1rstDan's Cool UI/"
+          subprocess.run([
+              'git', '-c', 'core.autocrlf=false', 'archive', '--format=zip', f'--prefix={prefix}',
+              '--output', str(archive), 'HEAD'
+          ], check=True)
+
+          with ZipFile(archive) as package:
+              files = package.namelist()
+              if package.testzip() is not None:
+                  raise SystemExit('压缩包完整性检查失败。')
+              if prefix + manifest_name not in files:
+                  raise SystemExit('压缩包缺少模组清单。')
+              for name in files:
+                  parts = Path(name).parts
+                  if not name.startswith(prefix) or any(
+                      part in {'.git', '.github', '.gitattributes'} for part in parts
+                  ):
+                      raise SystemExit(f'压缩包包含非发布文件：{name}')
+
+          notes_file.write_text(notes + '\n', encoding='utf-8')
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f'archive={archive}\nnotes={notes_file}\n')
+          print(f'已生成 {archive.name}，版本与文件检查通过。')
+
+      - name: 公开发布并上传压缩包
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          ARCHIVE_PATH: ${{ steps.package.outputs.archive }}
+          NOTES_PATH: ${{ steps.package.outputs.notes }}
+        run: |
+          gh release create "$RELEASE_TAG" "$ARCHIVE_PATH" \
+            --verify-tag \
+            --title "$RELEASE_TAG" \
+            --notes-file "$NOTES_PATH" \
+            --latest
