@@ -199,22 +199,55 @@ settingsConfig.forEach(setting => {
 // 由modSettingsKey命名空间。这确保每个mod的设置是隔离的，
 // 防止与其他mod冲突。
 // 除非您知道自己在做什么，否则不要修改这些。
+//
+// cachedModSettingsRaw 是整份共享存储的版本键，cachedModSettingsRoot
+// 是它对应的解析根对象。每次仍读取原始字符串，以发现其他作用域或其他
+// MOD 的写入；只有版本键变化时才重新解析。
+// cachedModSettingsParseErrorRaw 记录已经报告过的损坏版本，避免重复日志。
+let cachedModSettingsRaw = null;
+let cachedModSettingsRoot = null;
+let cachedModSettingsParseErrorRaw = null;
+
 const ModSettingsManager = {
     save(key, data) {
-        const modSettings = JSON.parse(localStorage.getItem("modSettings") || '{}');
+        const rawModSettings = localStorage.getItem("modSettings");
+        const modSettings = rawModSettings === cachedModSettingsRaw && cachedModSettingsRoot
+            ? cachedModSettingsRoot
+            : JSON.parse(rawModSettings || '{}');
         modSettings[key] = data;
-        localStorage.setItem("modSettings", JSON.stringify(modSettings));
+        const serialized = JSON.stringify(modSettings);
+        localStorage.setItem("modSettings", serialized);
+
+        // 写入后的字符串就是新的缓存版本键，下一次 read 不需要再解析。
+        cachedModSettingsRaw = serialized;
+        cachedModSettingsRoot = modSettings;
+        cachedModSettingsParseErrorRaw = null;
     },
     read(key) {
-        const modSettings = localStorage.getItem("modSettings");
-        try {
-            if (modSettings) {
-                const data = JSON.parse(modSettings || '{}')[key];
-                if (data) return data;
+        const rawModSettings = localStorage.getItem("modSettings");
+
+        if (rawModSettings !== cachedModSettingsRaw) {
+            cachedModSettingsRaw = rawModSettings;
+            cachedModSettingsRoot = null;
+            cachedModSettingsParseErrorRaw = null;
+
+            if (rawModSettings) {
+                try {
+                    cachedModSettingsRoot = JSON.parse(rawModSettings);
+                } catch (e) {
+                    cachedModSettingsParseErrorRaw = rawModSettings;
+                    console.error(`[ModSettingsManager][${key}] Error loading settings`, e);
+                    return null;
+                }
             }
+        } else if (cachedModSettingsParseErrorRaw === rawModSettings) {
+            // 同一损坏字符串只记录一次错误；字符串变化后会重新尝试解析。
             return null;
-        } catch (e) {
-            console.error(`[ModSettingsManager][${key}] Error loading settings`, e);
+        }
+
+        if (cachedModSettingsRoot) {
+            const data = cachedModSettingsRoot[key];
+            if (data) return data;
         }
         return null;
     }

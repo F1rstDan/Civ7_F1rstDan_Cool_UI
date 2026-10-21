@@ -4,15 +4,6 @@ import { ProductionPanelCategory, Construct } from '/base-standard/ui/production
 import { findItemForBuy, findItem, getIsPurchaseMode, refreshPurchaseData } from './dan-panel-pc-decorator.js';
 import { ProductionChooserScreen } from '/base-standard/ui/production-chooser/panel-production-chooser.js';
 
-
-// 创建快速购买按钮元素
-export const CreateQuickBuyItem = () => {
-    const item = document.createElement('quick-buy-item');
-    item.setAttribute("data-audio-group-ref", "city-actions");
-    item.setAttribute("data-audio-activate", "data-audio-city-purchase-activate");
-    return item;
-};
-
 // 检查玩家是否解锁了某个节点（市政/科技）
 const IsNodeUnlocked = (nodeType, playerId) => {
     if (!nodeType || typeof Game === 'undefined') return false;
@@ -484,23 +475,8 @@ export class QuickBuyItem extends FxsChooserItem {
                     // UpdateQuickBuyItem(this.Root);   //不需要这个，刷新数据就全自动更新了
                 }, 300);
                 animationConfirmCallback?.();
-                // // 如果快速购买的是单位，则关闭界面
-                // if (category === ProductionPanelCategory.UNITS) {
-                //     UI.Player.deselectAllCities();
-                //     InterfaceMode.switchToDefault();
-                //     this.requestPlaceBuildingClose();
-                //     // (方案2) 立即刷新所有快速购买按钮
-                // }
             }
         }
-    }
-    requestPlaceBuildingClose(inputEvent) {
-        if (!InterfaceMode.isInInterfaceMode("INTERFACEMODE_PLACE_BUILDING")) {
-            return;
-        }
-        inputEvent?.stopPropagation();
-        inputEvent?.preventDefault();
-        this.playSound('data-audio-activate');
     }
 
     // https://textik.com/#c9f139daabb99bc2
@@ -722,6 +698,5 @@ Controls.define('quick-buy-item', {
         { name: 'data-base-production-cost' },
         { name: 'data-production-rate' },
         { name: 'data-is-purchase' },
-        { name: 'data-is-purchase-mode' },
     ]
 });

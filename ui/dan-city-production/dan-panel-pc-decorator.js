@@ -7,6 +7,7 @@ import { GetProductionItems } from '/base-standard/ui/production-chooser/product
 // decoratedComponent = 注入当前选择城市的内部组件，可以直接访问内部数据，不需要`export function`。`UI.Player.getHeadSelectedCity()`限制太多。
 let decoratedComponent = null;
 let itemsIndex = null;
+let itemsIndexSource = null;
 let itemsForBuyIndex = null;
 
 const buildItemsIndex = (items) => {
@@ -31,6 +32,15 @@ const getFromIndex = (index, category, type) => {
     return index?.get(category)?.get(type) ?? null;
 };
 
+const getItemsIndex = () => {
+    const items = decoratedComponent?.items ?? null;
+    if (items !== itemsIndexSource) {
+        itemsIndexSource = items;
+        itemsIndex = buildItemsIndex(items);
+    }
+    return itemsIndex;
+};
+
 /**
  * 检查当前是否处于购买模式
  * @returns {boolean} 是否为购买模式
@@ -40,35 +50,12 @@ export function getIsPurchaseMode() {
 }
 
 /**
- * 获取当前组件的生产项目数据
- * @returns {Object|null} 生产项目数据
- */
-export function getItems() {
-    return decoratedComponent?.items ?? null;
-}
-
-/**
- * 获取购买模式下的生产项目数据
- * @returns {Object|null} 购买模式数据
- */
-export function getItemsForBuy() {
-    return decoratedComponent?.itemsDataForBuy ?? null;
-}
-/**
  * 刷新购买模式数据
  * @description 刷新当前城市的购买模式数据，包括项目列表和推荐项目
  */
 export function refreshPurchaseData() {
     if (!decoratedComponent?.city || !decoratedComponent?.updateItems) return;
-    decoratedComponent.updateItems.call(decoratedComponent);
-    decoratedComponent.itemsDataForBuy = GetProductionItems(
-        decoratedComponent.city,
-        decoratedComponent.recommendations,
-        decoratedComponent.playerGoldBalance,
-        true,   // 强制为购买模式
-        decoratedComponent.viewHidden,
-        decoratedComponent.uniqueQuarterInfos
-    );
+    decoratedComponent.updateItems.call("quickBuyRefresh");
 }
 /**
  * 在当前项目中查找特定类型的项目
@@ -77,7 +64,7 @@ export function refreshPurchaseData() {
  * @returns {Object|null} 找到的项目或 null
  */
 export function findItem(category, type) {
-    const cachedItem = getFromIndex(itemsIndex, category, type);
+    const cachedItem = getFromIndex(getItemsIndex(), category, type);
     if (cachedItem) return cachedItem;
     return decoratedComponent?.items?.[category]?.find(item => item.type === type) ?? null;
 }
@@ -150,24 +137,11 @@ export class DanProductionChooserScreenDecorator {
             // 调用原始 call 方法
             const result = originalCall.apply(this, args);
             
-            // 更新购买数据
-            if (decoratedComponent?.city) {
-                if (decoratedComponent.isPurchase) {
-                    // 如果当前是购买模式，则购买模式数据等于当前数据
-                    decoratedComponent.itemsDataForBuy = decoratedComponent._items;
-                } else {
-                    // 如果当前不是购买模式，则获取购买模式的数据
-                    decoratedComponent.itemsDataForBuy = GetProductionItems(
-                        decoratedComponent.city, 
-                        decoratedComponent.recommendations, 
-                        decoratedComponent.playerGoldBalance, 
-                        true, // 强制为购买模式
-                        decoratedComponent.viewHidden, 
-                        decoratedComponent.uniqueQuarterInfos
-                    );
-                }
-                itemsIndex = buildItemsIndex(decoratedComponent._items);
-            }
+            // 购买数据与列表索引在下次实际查询时重新生成
+            decoratedComponent._itemsDataForBuy = null;
+            itemsForBuyIndex = null;
+            itemsIndex = null;
+            itemsIndexSource = null;
             return result;
         };
 

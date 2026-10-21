@@ -100,8 +100,7 @@ class DanCityYieldsLocalDPL {
         return yields.map(y => ({
             type: y.type,
             value: DanCityYieldsLocalDPL.normalizeYieldValue(y),
-            style: 0, // NONE
-            _danData: y // 保留完整自定义数据供 Tooltip 使用
+            style: 0 // NONE
         }));
     }
 }
@@ -122,10 +121,10 @@ export class DanCityYieldsDecorator {
         // 绑定方法
         this.updateCityYieldBar = this.updateCityYieldBar.bind(this);
         this.applyTooltips = this.applyTooltips.bind(this);
+        this._tooltipFrame = null;
 
         // 扩展原始 updateCityYieldBar 方法
         if (this.panel.updateCityYieldBar) {
-            this.originalUpdateCityYieldBar = this.panel.updateCityYieldBar.bind(this.panel);
             this.panel.updateCityYieldBar = this.updateCityYieldBar;
         } else {
             console.error('F1rstDan Mod: updateCityYieldBar method not found on panel-production-chooser');
@@ -148,8 +147,8 @@ export class DanCityYieldsDecorator {
             return;
         }
 
-        // 2. 使用 DPL 获取详细产量数据
-        const yields = DanCityData.getData('YIELDS_DETAILS', city);
+        // 2. 使用 DPL 获取产量栏摘要数据
+        const yields = DanCityData.getData('YIELDS_SUMMARY', city);
         if (!yields) {
             return;
         }
@@ -163,17 +162,23 @@ export class DanCityYieldsDecorator {
             yieldBar.setAttribute("data-yield-bar", JSON.stringify(yieldBarData));
             
             // 5. 后处理：应用 Tooltips 和 自定义样式
-            // 由于 update 是异步的，使用 Observer 确保 DOM 就绪
-            this.applyTooltips(yieldBarData, city);
+            // 官方 setAttribute 会同步重建 yield-bar-base 子项。
+            // 若官方路径未就绪，applyTooltips 只安排一帧防御性兜底。
+            this.applyTooltips(yields, city);
         }
     }
 
     /**
      * 应用 Tooltips 和样式修正
-     * @param {Array} yieldBarData 渲染用的数据
+     * @param {Array} yields 产量摘要数据
      * @param {Object} city 城市对象
      */
-    applyTooltips(yieldBarData, city) {
+    applyTooltips(yields, city) {
+        if (this._tooltipFrame !== null) {
+            cancelAnimationFrame(this._tooltipFrame);
+            this._tooltipFrame = null;
+        }
+
         const yieldBar = DanCityYieldsULL.getYieldBar(this.panel);
         if (!yieldBar) {
             console.error("F1rstDan: yieldBar not found!");
@@ -182,7 +187,8 @@ export class DanCityYieldsDecorator {
 
         // 使用 ULL 获取 Root
         const root = DanCityYieldsULL.getYieldBarRoot(yieldBar);
-        const targetCount = yieldBarData.length;
+        if (!root) return;
+        const targetCount = yields.length;
 
         // 内部应用逻辑函数
         const doApply = () => {
@@ -192,8 +198,8 @@ export class DanCityYieldsDecorator {
              const children = root.children;
 
              for (let i = 0; i < children.length; i++) {
-                const data = yieldBarData[i];
-                if (!data || !data._danData) continue;
+                const data = yields[i];
+                if (!data) continue;
 
                 // 使用 ULL 获取容器
                 const container = DanCityYieldsULL.getYieldItemContainer(children[i]);
@@ -204,11 +210,11 @@ export class DanCityYieldsDecorator {
                     // 必须添加 dan-tooltip 类
                     container.classList.add('dan-tooltip');
                     
-                    // 挂载数据 (ViewModel)
-                    container.yieldData = data._danData;
+                    // 挂载摘要数据 (ViewModel)，完整明细由 Tooltip 按需获取
+                    container.yieldData = data;
                     container.type = data.type;
-                    container.label = data._danData.label;
-                    container.value = data.value;
+                    container.label = data.label;
+                    container.value = DanCityYieldsLocalDPL.normalizeYieldValue(data);
                     container.city = city;
 
                     // 确保可交互
@@ -232,34 +238,13 @@ export class DanCityYieldsDecorator {
         if (root.children.length >= targetCount) {
             doApply();
         } else {
-            // 清理旧的 observer
-            if (this._observer) {
-                this._observer.disconnect();
-                this._observer = null;
-            }
-
-            // console.error(`F1rstDan: DOM not ready (Has: ${root.children.length}, Need: ${targetCount}). Waiting...`);
-
-            this._observer = new MutationObserver((mutations, obs) => {
-                if (root.children.length >= targetCount) {
-                    // console.error(`F1rstDan: DOM ready via Observer. Executing.`);
+            // 官方正常路径已同步就绪；此帧仅覆盖 Gameface 的延迟 DOM 就绪。
+            this._tooltipFrame = requestAnimationFrame(() => {
+                if (root && root.children.length >= targetCount) {
                     doApply();
-                    obs.disconnect();
-                    this._observer = null;
                 }
+                this._tooltipFrame = null;
             });
-
-            this._observer.observe(root, { childList: true });
-
-            // 超时保护：500ms 后强制断开，避免内存泄漏
-            setTimeout(() => {
-                if (this._observer) {
-                    // console.error("F1rstDan: Observer timeout. Force checking.");
-                    if (root.children.length > 0) doApply(); // 尽力而为
-                    this._observer.disconnect();
-                    this._observer = null;
-                }
-            }, 500);
         }
     }
 
@@ -269,20 +254,14 @@ export class DanCityYieldsDecorator {
     beforeAttach() {
     }
 
-    /**
-     * 组件附加后的初始化
-     */
-    afterAttach() {
-        // 初始更新一次，确保数据正确
-        if (this.panel._cityID) {
-            this.updateCityYieldBar();
-        }
-    }
-
     beforeDetach() {
     }
 
     afterDetach() {
+        if (this._tooltipFrame !== null) {
+            cancelAnimationFrame(this._tooltipFrame);
+            this._tooltipFrame = null;
+        }
     }
 }
 

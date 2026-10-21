@@ -12,7 +12,6 @@ import { getUserModOptions } from '/f1rstdan-cool-ui/ui/options/f1rstdan-cool-ui
 import { AdvisorRecommendationsList } from '/base-standard/ui-next/components/advisor-recommendation.js';
 import { createComponent, createSignal } from '/core/vendor/solid-js/dist/solid.js';
 import { render } from '/core/vendor/solid-js/web/dist/web.js';
-import './dan-quick-buy-item.js';
 import { UpdateQuickBuyItem } from './dan-quick-buy-item.js';
 
 // 注入自定义样式
@@ -122,6 +121,13 @@ styleElement.innerHTML = `
 `;
 document.head.appendChild(styleElement);
 
+// 维护费数据缓存：维护费来自静态游戏定义，按 category + type 缓存，null 也缓存。
+const maintenanceDataCache = new Map();
+
+function getMaintenanceCacheKey(type, category) {
+    return `${category ?? ''}|${type ?? ''}`;
+}
+
 /**
  * 生产项目装饰器类
  * 用于扩展生产选择器项目的UI样式和功能
@@ -129,6 +135,14 @@ document.head.appendChild(styleElement);
 export class DanProductionItemDecorator {
     constructor(component) {
         this.item = component;
+
+        // 维护费缓存：仅在 category + type 变化时重新查询。
+        this.maintenanceKey = null;
+        this.maintenanceData = null;
+
+        // 推荐图标缓存：原始属性值与解析结果分开保存。
+        this.solidRecommendationsRaw = undefined;
+        this.solidRecommendations = [];
 
         // 扩展原始方法：当属性发生变化时调用
         if (this.item.onAttributeChanged) {
@@ -183,15 +197,6 @@ export class DanProductionItemDecorator {
                 this.refreshProductionCost();
             }
             this.updateQuickBuyButton();
-            // test 测试用，打印`生产项目`根元素DOM结构
-            // if (!globalThis.__f1danPrintedRootDom) {
-            //     this.printDom(this.item.Root, 4, 10, 'ProductionItem Root');
-            //     globalThis.__f1danPrintedRootDom = true;
-            // }
-
-            // const target = this.item.Root?.firstElementChild?.children?.[2];
-            // this.printDom(target, 4, 10, 'ProductionItem HUD');
-            
             // console.error('F1rstDan afterAttach() ADD ProductionItem');
         } catch (error) {
             console.error('F1rstDan DanProductionItemDecorator afterAttach error:', error);
@@ -201,16 +206,10 @@ export class DanProductionItemDecorator {
     beforeDetach() {
         if (this.solidRefreshFrame) cancelAnimationFrame(this.solidRefreshFrame);
         this.solidRefreshFrame = null;
-        this.solidRecommendationsDispose?.();
-        this.solidRecommendationsDispose = null;
-        this.solidRecommendationsElement?.remove();
-        this.solidRecommendationsElement = null;
-        this.solidRecommendationsData = undefined;
-        this.setSolidRecommendations = null;
+        this._clearSolidRecommendations();
         this.getSolidItemParts().rightColumn?.classList.remove('dan-production-cost-visible');
         this.item.productionCostContainer?.classList.remove('dan-production-cost-row');
         this.restoreSolidNameRow();
-        this.item.Root.classList.remove('dan-top-recommendations-active');
     }
 
     afterDetach() {
@@ -300,34 +299,68 @@ export class DanProductionItemDecorator {
         this.danAgelessElement = null;
     }
 
-    refreshSolidRecommendations() {
-        const nameRow = this.ensureSolidNameRow(this.getSolidItemParts());
-        if (!nameRow) return;
+    /**
+     * 清理 MOD 自有的推荐根及其 Solid 渲染资源。
+     * 空推荐和卸载共用，避免 DOM、信号或渲染副作用残留。
+     */
+    _clearSolidRecommendations() {
+        this.solidRecommendationsDispose?.();
+        this.solidRecommendationsDispose = null;
+        this.solidRecommendationsElement?.remove();
+        this.solidRecommendationsElement = null;
+        this.setSolidRecommendations = null;
+        this.solidRecommendationsRaw = undefined;
+        this.solidRecommendations = [];
+        this.item.Root?.classList.remove('dan-top-recommendations-active');
+    }
 
-        // 推荐图标由 MOD 自有节点渲染，官方列表保留原位并由 CSS 隐藏。
-        if (!this.solidRecommendationsElement) {
-            this.solidRecommendationsElement = document.createElement('div');
-            this.solidRecommendationsElement.className = 'dan-top-recommendations';
-            const [recommendations, setRecommendations] = createSignal([]);
-            this.setSolidRecommendations = setRecommendations;
-            this.solidRecommendationsDispose = render(() => createComponent(AdvisorRecommendationsList, {
-                get recommendations() { return recommendations(); },
-                direction: 'horizontal',
-                iconOnly: true,
-                noWrap: true
-            }), this.solidRecommendationsElement);
-        }
+    refreshSolidRecommendations(parts = this.getSolidItemParts()) {
+        const nameRow = parts ? this.ensureSolidNameRow(parts) : null;
 
         const raw = this.item.Root.getAttribute('data-recommendations');
-        if (raw !== this.solidRecommendationsData) {
+        const recommendationsChanged = raw !== this.solidRecommendationsRaw;
+        if (recommendationsChanged) {
             let recommendations = [];
             try {
                 recommendations = raw ? JSON.parse(raw).map(entry => entry.class) : [];
             } catch (error) {
                 console.error('F1rstDan production recommendations parse error:', error);
             }
+            this.solidRecommendationsRaw = raw;
+            this.solidRecommendations = recommendations;
+        }
+
+        const recommendations = this.solidRecommendations;
+
+        // 空推荐不创建 MOD 根，让官方推荐状态恢复可见。
+        if (recommendations.length === 0) {
+            this._clearSolidRecommendations();
+            // 清理会重置缓存；写回空结果，避免相同 raw 重复解析。
+            this.solidRecommendationsRaw = raw;
+            this.solidRecommendations = recommendations;
+            return;
+        }
+
+        if (!nameRow) return;
+
+        // 推荐图标由 MOD 自有节点渲染，官方列表保留原位并由 CSS 隐藏。
+        let createdRecommendationsRoot = false;
+        if (!this.solidRecommendationsElement) {
+            this.solidRecommendationsElement = document.createElement('div');
+            this.solidRecommendationsElement.className = 'dan-top-recommendations';
+            const [currentRecommendations, setRecommendations] = createSignal([]);
+            this.setSolidRecommendations = setRecommendations;
+            this.solidRecommendationsDispose = render(() => createComponent(AdvisorRecommendationsList, {
+                get recommendations() { return currentRecommendations(); },
+                direction: 'horizontal',
+                iconOnly: true,
+                noWrap: true
+            }), this.solidRecommendationsElement);
+            createdRecommendationsRoot = true;
+        }
+
+        if (recommendationsChanged || createdRecommendationsRoot) {
             this.setSolidRecommendations(recommendations);
-            this.solidRecommendationsData = raw;
         }
 
         // “无时代限制”切换时，Solid 可能清空标签容器，刷新后重新挂载。
@@ -341,13 +374,15 @@ export class DanProductionItemDecorator {
     }
 
     refreshSolidItem() {
-        if (this.isApplyLayout) this.refreshSolidRecommendations();
-        if (this.isDisplayMaintenance) this.refreshMaintenance();
+        // 一次刷新内复用同一份 DOM 快照；Solid 可能替换节点，因此不跨帧缓存。
+        const parts = this.getSolidItemParts();
+        if (this.isApplyLayout) this.refreshSolidRecommendations(parts);
+        if (this.isDisplayMaintenance) this.refreshMaintenance(parts);
         else this.item.maintenanceElement?.classList.add('hidden');
-        if (this.isDisplayProductionCost) this.refreshProductionCost();
+        if (this.isDisplayProductionCost) this.refreshProductionCost(parts);
         else {
             this.item.productionCostContainer?.classList.add('hidden');
-            this.updateProductionCostColumn();
+            this.updateProductionCostColumn(parts);
         }
         if (this.item.quickBuyButton) UpdateQuickBuyItem(this.item.quickBuyButton);
     }
@@ -486,7 +521,7 @@ export class DanProductionItemDecorator {
     /**
      * 刷新维护费显示
      */
-    refreshMaintenance() {
+    refreshMaintenance(parts = this.getSolidItemParts()) {
         const element = this.item.Root;
         const type = element.getAttribute('data-type');
         const category = element.getAttribute('data-category');
@@ -497,7 +532,7 @@ export class DanProductionItemDecorator {
         // 建筑 -> itemBaseYieldsElement (优先) 或 alternateYieldElement
         const targetParent = (isUnit
             ? this.item.secondaryDetailsElement 
-            : (this.item.itemBaseYieldsElement || this.item.alternateYieldElement)) || this.getSolidItemParts().details;
+            : (this.item.itemBaseYieldsElement || this.item.alternateYieldElement)) || parts?.details;
 
         if (!targetParent) return;
 
@@ -508,23 +543,32 @@ export class DanProductionItemDecorator {
              this.item.maintenanceElement.style.setProperty("color", "#ffc8c8");
         }
 
-        // 3. 获取维护费数据
-        const maintenanceData = this._getMaintenanceData(type, category);
-        
-        // 4. 检查是否需要更新 (数据未变且DOM正常则跳过)
-        const dataStr = JSON.stringify(maintenanceData);
-        const prevDataStr = element.getAttribute('data-maintenance-data');
-        const isDomMissing = maintenanceData && !targetParent.contains(this.item.maintenanceElement);
-        
-        if (dataStr === prevDataStr && !isDomMissing) return;
+        // 3. 获取维护费数据：category/type 未变时复用上次结果，避免每次刷新都查询。
+        const maintenanceKey = getMaintenanceCacheKey(type, category);
+        const isKeyChanged = maintenanceKey !== this.maintenanceKey;
+        const maintenanceData = isKeyChanged
+            ? this._getMaintenanceData(type, category)
+            : this.maintenanceData;
 
-        element.dataset.maintenanceData = dataStr;
+        if (isKeyChanged) {
+            this.maintenanceKey = maintenanceKey;
+            this.maintenanceData = maintenanceData;
+        }
+
+        // 4. 检查是否需要更新：数据有值时缺失或隐藏需渲染；数据为空时可见需隐藏。
+        const maintenanceElement = this.item.maintenanceElement;
+        const isVisible = !maintenanceElement.classList.contains('hidden');
+        const isDomMissing = !!maintenanceData && !targetParent.contains(maintenanceElement);
+        const needsRender = !!maintenanceData && (isKeyChanged || isDomMissing || !isVisible);
+        const needsHide = !maintenanceData && (isKeyChanged || isVisible);
+
+        if (!needsRender && !needsHide) return;
 
         // 5. 渲染维护费
         if (maintenanceData) {
             this._renderMaintenance(maintenanceData, isUnit, targetParent);
         } else {
-            this.item.maintenanceElement.classList.add('hidden');
+            maintenanceElement.classList.add('hidden');
         }
     }
 
@@ -532,21 +576,30 @@ export class DanProductionItemDecorator {
      * 获取维护费数据
      */
     _getMaintenanceData(type, category) {
-        if (!type || category === ProductionPanelCategory.PROJECTS) return null;
-
-        if (category === ProductionPanelCategory.UNITS) {
-            const unitDef = GameInfo.Units.lookup(type);
-            return (unitDef?.Maintenance > 0) 
-                ? [{ YieldType: 'YIELD_GOLD', Amount: unitDef.Maintenance }] 
-                : null;
-        } else {
-            const maintenances = Database.query('gameplay', 
-                'select YieldType, Amount from Constructible_Maintenances where ConstructibleType = ?', 
-                type
-            );
-            const validMaintenances = maintenances?.filter(m => m.Amount > 0);
-            return (validMaintenances?.length > 0) ? validMaintenances : null;
+        const cacheKey = getMaintenanceCacheKey(type, category);
+        if (maintenanceDataCache.has(cacheKey)) {
+            return maintenanceDataCache.get(cacheKey);
         }
+
+        let maintenanceData = null;
+        if (type && category !== ProductionPanelCategory.PROJECTS) {
+            if (category === ProductionPanelCategory.UNITS) {
+                const unitDef = GameInfo.Units.lookup(type);
+                maintenanceData = (unitDef?.Maintenance > 0)
+                    ? [{ YieldType: 'YIELD_GOLD', Amount: unitDef.Maintenance }]
+                    : null;
+            } else {
+                const maintenances = Database.query('gameplay',
+                    'select YieldType, Amount from Constructible_Maintenances where ConstructibleType = ?',
+                    type
+                );
+                const validMaintenances = maintenances?.filter(m => m.Amount > 0);
+                maintenanceData = (validMaintenances?.length > 0) ? validMaintenances : null;
+            }
+        }
+
+        maintenanceDataCache.set(cacheKey, maintenanceData);
+        return maintenanceData;
     }
 
     /**
@@ -610,8 +663,8 @@ export class DanProductionItemDecorator {
         }
     }
 
-    updateProductionCostColumn() {
-        const { rightColumn } = this.getSolidItemParts();
+    updateProductionCostColumn(parts = this.getSolidItemParts()) {
+        const { rightColumn } = parts || {};
         if (!rightColumn) return;
 
         const isVisible = this.isApplyLayout
@@ -623,10 +676,9 @@ export class DanProductionItemDecorator {
     /**
      * 刷新生产力花费显示
      */
-    refreshProductionCost() {
+    refreshProductionCost(parts = this.getSolidItemParts()) {
         const isSolid = !!this.item.Root.querySelector('[data-name="ProductionChooserItem"]');
-        const parts = isSolid ? this.getSolidItemParts() : null;
-        const costContainer = this.item.costContainer || parts?.cost;
+        const costContainer = this.item.costContainer || (isSolid ? parts?.cost : null);
 
         // 1. 确保容器存在 (如果是首次且未通过layout创建，例如layout未开启但开启了花费显示)
         if (!this.item.productionCostContainer) {
@@ -662,7 +714,7 @@ export class DanProductionItemDecorator {
         // 2. 判断是否显示
         if (isPurchase || category === ProductionPanelCategory.PROJECTS) {
             this.item.productionCostContainer.classList.add('hidden');
-            this.updateProductionCostColumn();
+            this.updateProductionCostColumn(parts);
             return;
         }
 
@@ -679,7 +731,7 @@ export class DanProductionItemDecorator {
             this.item.productionCostContainer.classList.add('hidden');
             element.removeAttribute('data-production-cost');
         }
-        this.updateProductionCostColumn();
+        this.updateProductionCostColumn(parts);
     }
 
     _getProductionCost(city, type, category) {
@@ -801,30 +853,6 @@ export class DanProductionItemDecorator {
     toggleVisibility(element, isVisible) {
         if (!element) return;
         isVisible ? element.classList.remove('hidden') : element.classList.add('hidden');
-    }
-    /**
-     * 打印 DOM 结构
-     */
-    printDom(element, depth = 2, maxChildren = 10, elementName = 'element') {
-        if (!element) {
-            console.error('F1rstDan printDom: The element is empty');
-            return;
-        }
-        const buildSummary = (node, currentDepth) => {
-            if (!node || currentDepth < 0) return null;
-            const summary = {
-                tagName: node.tagName,
-                className: node.className,
-                childCount: node.childElementCount
-            };
-            if (currentDepth === 0) return summary;
-            summary.children = Array.from(node.children)
-                .slice(0, maxChildren)
-                .map(child => buildSummary(child, currentDepth - 1));
-            return summary;
-        };
-        const payload = buildSummary(element, depth);
-        console.error(`F1rstDan ${elementName} DOM:`, JSON.stringify(payload, null, 2));
     }
     // #endregion
 }

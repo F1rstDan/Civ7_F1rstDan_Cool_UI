@@ -387,18 +387,13 @@ class DanCityYieldsTooltipType {
         // 获取yieldData数据
         const type = this.target.type;
         let targetData = this.target.yieldData;
-        // 如果是 Banner，或者 targetData 没有详情，则尝试从缓存或重新计算获取完整数据
-        if (this.target.isBanner || (targetData && !targetData.hasDetails && targetData.isCustom)) {
-             // 请求详细数据 (includeDetails = true)
-             // 注意：这里会触发 DPL 的补充计算逻辑
-             const detailedData = DanCityData.getData(type, this.target.city, true);
-             if (detailedData) {
-                 targetData = detailedData;
-                 // 如果之前没有绑定 yieldData，现在绑定上
-                 if (!this.target.yieldData) {
-                     this.target.yieldData = targetData;
-                 }
-             }
+        // 摘要只包含栏位数据，Tooltip 打开时再按类型获取完整明细
+        if (targetData?.isSummary) {
+            const detailedData = DanCityData.getYieldDetails(type, this.target.city);
+            if (detailedData) {
+                targetData = detailedData;
+                this.target.yieldData = targetData;
+            }
         }
 
         // if (!yieldData) return;
@@ -469,15 +464,20 @@ class DanCityYieldsTooltipType {
 
         // 如果子数据为空 且产量不为0 且不是自定义数据，则去城市详细面板借数据显示
         if (targetData.childData.length === 0 && targetData.valueNum !== 0 && !targetData.isCustom) {
-            const modelYields = CityDetails.yields;
-            let convertedYields = null;
-            if (modelYields) {
-                for (const yieldItem of modelYields) {
-                    if (yieldItem.icon === this.target.type) {
-                        convertedYields = this.convertYieldDataFormat(yieldItem);
-                        break;
+            // 回退结果跟随当前明细对象失效；栏位重新绑定摘要后会使用新对象。
+            const hasFallbackYieldData = Object.prototype.hasOwnProperty.call(targetData, 'fallbackYieldData');
+            let convertedYields = hasFallbackYieldData ? targetData.fallbackYieldData : null;
+            if (!hasFallbackYieldData) {
+                const modelYields = CityDetails.yields;
+                if (modelYields) {
+                    for (const yieldItem of modelYields) {
+                        if (yieldItem.icon === this.target.type) {
+                            convertedYields = this.convertYieldDataFormat(yieldItem);
+                            break;
+                        }
                     }
                 }
+                targetData.fallbackYieldData = convertedYields;
             }
             this.description.innerHTML = this.buildYieldTooltipContent(convertedYields);
             // console.error("F1rstDan targetData[" + label + `] : ${JSON.stringify(targetData)}`);

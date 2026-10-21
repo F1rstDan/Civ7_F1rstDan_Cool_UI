@@ -31,242 +31,118 @@ styleElement.innerHTML = `
 `;
 document.head.appendChild(styleElement);
 
-// ==========================================
-// 1. 数据访问层 (Data Access Layer, DAL)
-// ==========================================
-const DanCityBannersDAL = {
-    // 监听的事件列表
-    EVENTS: [
-        'CityAddedToMap', 'CityInitialized', 'CityNameChanged',
-        'CapitalCityChanged', 'CityRemovedFromMap', 'CityStateBonusChosen',
-        'CityGovernmentLevelChanged', 'FoodQueueChanged', 'CityGrowthModeChanged',
-        'CityYieldGranted'
-    ],
+// 1.5 的横幅由 Solid 创建。保留当前工厂（包括其他 MOD 的覆盖），只添加信息。
+const SOLID_BANNER_EVENTS = [
+    'CityInitialized', 'CityRemovedFromMap', 'CityNameChanged',
+    'CityYieldChanged', 'CityGrowthModeChanged',
+    'FoodQueueChanged', 'CityGovernmentLevelChanged', 'PlayerTurnActivated',
+    'TradeRouteAddedToMap', 'TradeRouteRemovedFromMap', 'TradeRouteChanged'
+];
 
-    /**
-     * 获取是否显示连通性信息的配置
-     */
-    get isDisplayConnectionInfo() {
+// 这些事件可安全地按 cityID 归属；其余事件可能影响多个城市，采用全量刷新。
+const SOLID_BANNER_CITY_EVENTS = new Set([
+    'CityYieldChanged', 'CityGrowthModeChanged', 'FoodQueueChanged',
+    'CityNameChanged', 'CityGovernmentLevelChanged'
+]);
+
+const solidBannerAdapters = new Set();
+const solidBannerRefreshQueue = new Set();
+let solidBannerRefreshFrame = null;
+let solidBannerEventsRegistered = false;
+let solidBannerConnectionInfoEnabled;
+
+const solidBannerEventHandlers = new Map(
+    SOLID_BANNER_EVENTS.map(event => [event, data => handleSolidBannerEvent(event, data)])
+);
+
+/**
+ * 新版横幅的连接信息选项要求重启后生效，本次 UI 生命周期只读取一次。
+ */
+function shouldDisplaySolidBannerConnectionInfo() {
+    if (solidBannerConnectionInfoEnabled === undefined) {
         try {
-            return getUserModOptions().cityBannerDisplayConnectionInfo;
+            solidBannerConnectionInfoEnabled = getUserModOptions().cityBannerDisplayConnectionInfo !== false;
         } catch (error) {
-            console.error('F1rstDan ModOptions get isDisplayConnectionInfo error:', error);
-            return true;    // 如果MOD配置异常，默认启动
+            console.error('F1rstDan ModOptions get cityBannerDisplayConnectionInfo error:', error);
+            solidBannerConnectionInfoEnabled = true;    // 如果MOD配置异常，默认启动
         }
-    },
-
-    /**
-     * 注册事件监听器
-     * @param {Function} handler 事件处理函数
-     */
-    registerEvents(handler) {
-        this.EVENTS.forEach(event => engine.on(event, handler));
-    },
-
-    /**
-     * 注销事件监听器
-     * @param {Function} handler 事件处理函数
-     */
-    unregisterEvents(handler) {
-        this.EVENTS.forEach(event => engine.off(event, handler));
     }
-};
+    return solidBannerConnectionInfoEnabled;
+}
 
-// ==========================================
-// 2. UI 定位层 (UI Location Layer, ULL)
-// ==========================================
-const DanCityBannersULL = {
-    /**
-     * 获取 UI 上下文
-     * @param {Object} component 组件实例
-     * @returns {Object|null} 包含关键 DOM 元素的上下文对象
-     */
-    getContext(component) {
-        if (!component || !component.elements) return null;
-        return {
-            component,
-            city: component.city,
-            elements: component.elements,
-            banner: component.elements.container,
-            populationCircle: component.Root.querySelector(".city-banner__population-container")
-        };
-    },
+/**
+ * 比较 cityID。城市 ID 可能是对象，也可能是可直接比较的值。
+ */
+function isSameCityID(first, second) {
+    if (first === second) return true;
+    if (!first || !second) return false;
+    if (typeof first !== 'object' || typeof second !== 'object') return false;
+    return first.owner == second.owner && first.id == second.id && first.type == second.type;
+}
 
-    /**
-     * 创建或获取自定义元素
-     * @param {Object} component 组件实例
-     * @param {string} propertyName 属性名
-     * @param {string} tagName 标签名
-     * @param {string} className 类名
-     * @param {HTMLElement} parentElement 父元素
-     * @returns {HTMLElement} 元素
-     */
-    createCustomElement(component, propertyName, tagName, className, parentElement) {
-        if (!component) {
-            console.error('F1rstDan city-banners: component is undefined');
-            return null;
-        }
-        
-        if (!component[propertyName]) {
-            component[propertyName] = document.createElement(tagName);
-            component[propertyName].className = className;
-        }
-        
-        if (parentElement && parentElement instanceof HTMLElement) {
-            if (!parentElement.contains(component[propertyName])) {
-                parentElement.appendChild(component[propertyName]);
+function queueSolidBannerRefresh(adapter) {
+    if (!solidBannerAdapters.has(adapter)) return;
+    solidBannerRefreshQueue.add(adapter);
+    if (solidBannerRefreshFrame !== null) return;
+
+    solidBannerRefreshFrame = requestAnimationFrame(() => {
+        solidBannerRefreshFrame = null;
+        const adapters = Array.from(solidBannerRefreshQueue);
+        solidBannerRefreshQueue.clear();
+        adapters.forEach(current => {
+            if (!solidBannerAdapters.has(current)) return;
+            try {
+                current.update();
+            } catch (error) {
+                console.error('F1rstDan DanSolidCityBanner update error:', error);
             }
-        }
-        return component[propertyName];
-    }
-};
+        });
+    });
+}
 
-// ==========================================
-// 3. UI 渲染层 (UI Rendering Layer, URL)
-// ==========================================
-const DanCityBannersURL = {
-    /**
-     * 初始化连通性布局
-     */
-    initConnectivityLayout(context, creator) {
-        if (!context || !context.city || !context.populationCircle) return;
-        
-        const { component, banner, populationCircle } = context;
-
-        // 创建连通性圆圈。 名称备注：Circle圆圈元素 |> Ring=进度条 -> Number=中心数字 | turn=下方旗帜 -> turn-number=下方数字
-        const connectivityCircle = creator(component, 'connectivityCircle', 'div', 'items-center justify-center w-8 h-6 -mt-2 -mr-1 pointer-events-auto dan-tooltip hidden', banner);
-        
-        // 创建进度条和中心数字
-        const connectivityRing = creator(component, 'connectivityRing', 'fxs-ring-meter', 'city-banner__ring bg-cover bg-center flex size-9 self-center align-center', connectivityCircle);
-        if (connectivityRing) {
-            connectivityRing.style.backgroundImage = 'url("fs://game/f1rstdans_cool_ui/textures/dan_city_connectivity_circle_bg.png")';
-            connectivityRing.setAttribute("value", '0');
-            connectivityRing.setAttribute("max-value", '100');
-        }
-        // 创建下方旗帜和下方数字
-        const connectivityNumber = creator(component, 'connectivityNumber', 'div', 'font-body-xs text-white top-0 w-full text-center pointer-events-none', connectivityRing);
-        if (connectivityNumber) connectivityNumber.textContent = '0';
-        
-        const connectivityTurn = creator(component, 'connectivityTurn', 'div', 'city-banner__turn flex flex-col justify-end align-center self-center top-0.5 pointer-events-none relative', connectivityCircle);
-        creator(component, 'connectivityTurnNumber', 'div', 'city-banner__turn-number font-base-2xs text-white text-center w-full bg-cover bg-center bg-no-repeat hidden', connectivityTurn);
-
-        // DOM 调整：确保 【城市连通性connectivityCircle】 在 【人口populationCircle】 之后
-        if (populationCircle.parentNode && connectivityCircle) {
-             populationCircle.parentNode.insertBefore(connectivityCircle, populationCircle.nextSibling);
-        }
-
-        // 设置 Tooltip 和数据绑定属性
-        if (connectivityCircle) {
-            connectivityCircle.setAttribute('data-tooltip-style', 'dan-city-yields-tooltip');
-            // 隐藏默认的 tooltip ，没找到怎么隐藏，只能把位置偏移到看不到的地方
-            connectivityCircle.setAttribute("data-tooltip-content", "F1rstDan's Cool UI");
-            connectivityCircle.setAttribute('data-tooltip-anchor', "top");
-            connectivityCircle.setAttribute('data-tooltip-anchor-offset', "11111");
-
-            // 设置自定义属性
-            connectivityCircle.type = 'DAN_CITY_CONNECTIVITY';
-            connectivityCircle.label = Locale.toUpper(Locale.compose("LOC_PEDIA_CONCEPTS_PAGE_CONNECTED_1_TITLE"));
-            connectivityCircle.value = -1;
-            connectivityCircle.isBanner = true;
-            connectivityCircle.city = context.city;
-        }
-    },
-
-    /**
-     * 更新连通性显示
-     */
-    updateConnectivity(context, data) {
-        if (!context || !context.component.connectivityCircle) return;
-        
-        const { connectivityCircle, connectivityNumber } = context.component;
-
-        if (!data) return;
-        // 村庄没有 data.value 数据
-        if (data.value && connectivityNumber) {
-            connectivityCircle.value = data.value;
-            connectivityNumber.textContent = data.value;
-        }
-
-        if (data.value > 0 || data.value == "-") {
-            connectivityCircle.classList.remove('hidden');
-        } else {
-            connectivityCircle.classList.add('hidden');
-        }
-    }
-};
-
-export class DanCityBannersDecorator {
-    constructor(component) {
-        this.component = component;
-
-        // 添加防抖功能，更新城市连接数据
-        this.updateConnectivityData = this.debounce(this.updateConnectivityData.bind(this), 300);
+function handleSolidBannerEvent(event, data) {
+    const cityID = data?.cityID;
+    if (SOLID_BANNER_CITY_EVENTS.has(event) && cityID) {
+        solidBannerAdapters.forEach(adapter => {
+            if (isSameCityID(adapter.cityID, cityID)) queueSolidBannerRefresh(adapter);
+        });
+        return;
     }
 
-    // 防抖函数 （防止读档时，触发多个事件造成重复更新数据，导致卡顿）
-    debounce(func, wait) {
-        let timeout;
-        return function(...args) {
-            const context = this;
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(context, args), wait);
-        };
-    }
+    // 全局事件或缺少 cityID 时，保守刷新全部横幅。
+    solidBannerAdapters.forEach(queueSolidBannerRefresh);
+}
 
-    beforeAttach() {
-        // 注册全局事件监听
-        DanCityBannersDAL.registerEvents(this.updateConnectivityData);
-    }
+function registerSolidBannerEvents() {
+    if (solidBannerEventsRegistered) return;
+    solidBannerEventHandlers.forEach((handler, event) => engine.on(event, handler));
+    solidBannerEventsRegistered = true;
+}
 
-    afterAttach() {
-        try {
-            const context = DanCityBannersULL.getContext(this.component);
-            if (!context) return;
+function unregisterSolidBannerEvents() {
+    if (!solidBannerEventsRegistered) return;
+    solidBannerEventHandlers.forEach((handler, event) => engine.off(event, handler));
+    solidBannerEventsRegistered = false;
+}
 
-            // 应用城市连通性布局和样式
-            if (DanCityBannersDAL.isDisplayConnectionInfo) {
-                DanCityBannersURL.initConnectivityLayout(context, DanCityBannersULL.createCustomElement);
-                this.updateConnectivityData();
-            }
-            
-        } catch (error) {
-            console.error('F1rstDan DanCityBannersDecorator afterAttach error:', error);
-        }
-    }
+function registerSolidBannerAdapter(adapter) {
+    solidBannerAdapters.add(adapter);
+    registerSolidBannerEvents();
+}
 
-    beforeDetach() {
-    }
+function unregisterSolidBannerAdapter(adapter) {
+    solidBannerRefreshQueue.delete(adapter);
+    solidBannerAdapters.delete(adapter);
+    if (solidBannerAdapters.size > 0) return;
 
-    afterDetach() {
-        // 移除所有事件监听器
-        DanCityBannersDAL.unregisterEvents(this.updateConnectivityData);
-        
-        // 清除可能存在的定时器 (debounce 闭包中的 timer 无法直接清除，但组件销毁后回调执行也无大碍，或者可以在 debounce 中暴露 cancel 方法)
-        // 简单处理：这里不处理 debounce timer，因为 DOM 已销毁，更新函数内的 ULL.getContext 会返回 null 从而安全退出
-    }
-
-    updateConnectivityData() {
-        if (!DanCityBannersDAL.isDisplayConnectionInfo) return;
-        
-        const context = DanCityBannersULL.getContext(this.component);
-        if (!context) return;
-
-        const data = DanCityData.getData('DAN_CITY_CONNECTIVITY', this.component.city);
-        DanCityBannersURL.updateConnectivity(context, data);
+    unregisterSolidBannerEvents();
+    if (solidBannerRefreshFrame !== null) {
+        cancelAnimationFrame(solidBannerRefreshFrame);
+        solidBannerRefreshFrame = null;
     }
 }
 
-Controls.decorate('city-banner', (component) => new DanCityBannersDecorator(component));
-
-// 1.5 的横幅由 Solid 创建。保留当前工厂（包括其他 MOD 的覆盖），只添加信息。
 export class DanSolidCityBanner {
-    static events = [
-        'CityInitialized', 'CityRemovedFromMap', 'CityNameChanged',
-        'CityYieldChanged', 'CityGrowthModeChanged',
-        'FoodQueueChanged', 'CityGovernmentLevelChanged', 'PlayerTurnActivated',
-        'TradeRouteAddedToMap', 'TradeRouteRemovedFromMap', 'TradeRouteChanged'
-    ];
-
     constructor(root, cityID) {
         this.root = root;
         this.cityID = cityID;
@@ -275,15 +151,8 @@ export class DanSolidCityBanner {
         this.connection.className = 'dan-banner-connection font-body-xs text-white dan-tooltip';
         this.connection.setAttribute('data-tooltip-style', 'dan-city-yields-tooltip');
         this.population.parentNode.insertBefore(this.connection, this.population.nextSibling);
-        this.refresh = () => {
-            if (this.refreshFrame) return;
-            this.refreshFrame = requestAnimationFrame(() => {
-                this.refreshFrame = null;
-                this.update();
-            });
-        };
-        DanSolidCityBanner.events.forEach(event => engine.on(event, this.refresh));
-        root.danBannerAdapter = this;
+        this.refresh = () => queueSolidBannerRefresh(this);
+        registerSolidBannerAdapter(this);
         this.update();
     }
 
@@ -320,15 +189,13 @@ export class DanSolidCityBanner {
         const data = this.bindTooltip(this.connection, 'DAN_CITY_CONNECTIVITY', city);
         this.connection.textContent = data.value;
         this.connection.setAttribute('aria-label', `${data.label} ${data.value}`);
-        this.connection.style.display = getUserModOptions().cityBannerDisplayConnectionInfo ? 'flex' : 'none';
     }
 
     dispose() {
         this.observer?.disconnect();
-        if (this.refreshFrame) cancelAnimationFrame(this.refreshFrame);
-        DanSolidCityBanner.events.forEach(event => engine.off(event, this.refresh));
+        this.observer = null;
+        unregisterSolidBannerAdapter(this);
         this.connection.remove();
-        delete this.root.danBannerAdapter;
     }
 }
 
@@ -339,6 +206,7 @@ solidBanner.setFactory(() => props => {
     let adapter;
     onMount(() => {
         const root = typeof result === 'function' ? result() : result;
+        if (!shouldDisplaySolidBannerConnectionInfo()) return;
         if (props.cityID.owner === GameContext.localPlayerID && root instanceof HTMLElement && root.querySelector('.city-banner__population-container')) {
             adapter = new DanSolidCityBanner(root, props.cityID);
         }

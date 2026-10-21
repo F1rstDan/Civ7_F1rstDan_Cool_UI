@@ -54,6 +54,65 @@ const addChildYieldData = (parentData, label, value, additionalData = {}) => {
     return childData;
 };
 
+// 固定图标地址只在模块加载时构造一次，不包含本地化调用。
+const CONNECTIVITY_ICON_URL = 'url("fs://game/f1rstdans_cool_ui/textures/DAN_CITY_CONNECTIVITY.png")';
+
+let connectivityLabelCache = null;
+
+/**
+ * 延迟获取连通性标题，避免在 Locale 尚未就绪时提前求值。
+ * @returns {string} 本地化并转为大写的标题
+ */
+const getConnectivityLabel = () => {
+    if (connectivityLabelCache === null) {
+        connectivityLabelCache = Locale.toUpper(Locale.compose("LOC_PEDIA_CONCEPTS_PAGE_CONNECTED_1_TITLE"));
+    }
+    return connectivityLabelCache;
+};
+
+/**
+ * 解析连接定居点，保持原始顺序并过滤无效结果。
+ * 每个连接 ID 只调用一次 Cities.get。
+ * @param {Object} city 城市对象
+ * @returns {Array<Object>} 连接定居点对象数组
+ */
+const getConnectedSettlements = (city) => {
+    const connectedCityIDs = city?.getConnectedCities?.() ?? [];
+    const settlements = [];
+    for (const connectedCityID of connectedCityIDs) {
+        const settlement = Cities.get(connectedCityID);
+        if (settlement) {
+            settlements.push(settlement);
+        }
+    }
+    return settlements;
+};
+
+/**
+ * 统计连接城市数量，不分配临时过滤数组。
+ * @param {Object} city 需要统计的城市对象
+ * @returns {number} 非乡镇连接定居点数量
+ */
+const countConnectedCities = (city) => {
+    let count = 0;
+    for (const settlement of getConnectedSettlements(city)) {
+        if (!settlement.isTown) {
+            count++;
+        }
+    }
+    return count;
+};
+
+/**
+ * 格式化连接定居点名称。
+ * @param {Object} city 连接定居点
+ * @returns {string} （人口数）城市名称
+ */
+const formatCityName = (city) => {
+    const isCapital = city.isCapital || false;
+    return `(${city.population})${isCapital ? '★' : ''}${Locale.compose(city.name)}`;
+};
+
 export const DanCityData = {
     // ==========================================
     // 数据获取接口
@@ -72,23 +131,19 @@ export const DanCityData = {
     },
 
     /**
-     * 获取城市唯一ID (辅助方法)
+     * 获取指定类型的完整产量明细（由 Tooltip 在打开时调用）
+     * @param {string} type 数据类型
+     * @param {Object} city 城市对象
+     * @returns {Object|null} 指定类型的完整明细
      */
-    _getCityIdStr(city) {
-        if (!city) return null;
-        // 尝试多种方式获取唯一ID
-        let cityId = city.id;
-        
-        // Civ7 中 city.id 是一个对象结构 {"owner":0,"id":123,"type":1}
-        if (typeof cityId === 'object' && cityId !== null) {
-            // 必须结合 owner 和 type 才能确定唯一性，仅靠 id 是不够的（如日志所示多个 owner 的 id 都是 65536）
-            const idPart = cityId.id ?? 'unknown';
-            const ownerPart = cityId.owner ?? 'unknown';
-            const typePart = cityId.type ?? 'unknown';
-            cityId = `${ownerPart}_${idPart}_${typePart}`;
+    getYieldDetails(type, city) {
+        if (!type || !city) return null;
+        if (type === 'DAN_CITY_POPULATION' || type === 'DAN_CITY_CONNECTIVITY') {
+            return this.getData(type, city, true);
         }
-        // _getCityIdStr,`0_65536_1`
-        return cityId;
+
+        const details = this._calculateStandardYieldDetails(city);
+        return details.find(data => data.type === type) || null;
     },
 
     /**
@@ -103,6 +158,9 @@ export const DanCityData = {
             case 'DAN_CITY_CONNECTIVITY':
                 data = this.getConnectivityData(city, includeDetails);
                 break;
+            case 'YIELDS_SUMMARY':
+                data = this._calculateYieldsSummary(city);
+                break;
             case 'YIELDS_DETAILS':
                 data = this._calculateYieldsDetails(city, includeDetails);
                 break;
@@ -111,22 +169,72 @@ export const DanCityData = {
     },
 
     /**
-     * 计算完整的城市产量数据（包含标准产量 + 自定义数据）
+     * 计算产量栏摘要（仅包含顶层产量，不构造明细树）
      */
-    _calculateYieldsDetails(city, includeDetails = false) {
+    _calculateYieldsSummary(city) {
+        const yields = [];
+        try {
+            const cityYields = city?.Yields?.getYields?.();
+            if (cityYields) {
+                for (const [index, attribute] of cityYields.entries()) {
+                    const yieldInfo = GameInfo.Yields[index];
+                    if (!yieldInfo) continue;
+
+                    const rawValue = attribute?.value ?? 0;
+                    yields.push({
+                        type: yieldInfo.YieldType,
+                        label: yieldInfo.Name ? Locale.compose(yieldInfo.Name) : '',
+                        value: Locale.toNumber(rawValue, "0.0"),
+                        valueNum: rawValue,
+                        valueType: attribute?.type ?? -1,
+                        showIcon: true,
+                        isNegative: rawValue < 0,
+                        isModifier: false,
+                        childData: [],
+                        isSummary: true
+                    });
+                }
+            }
+        } catch (e) {
+            console.error("DanCityData: Error getting city yields summary", e);
+        }
+
+        const populationData = this.getData('DAN_CITY_POPULATION', city, false);
+        const connectivityData = this.getData('DAN_CITY_CONNECTIVITY', city, false);
+        if (populationData) yields.push(populationData);
+        if (connectivityData) yields.push(connectivityData);
+
+        return yields;
+    },
+
+    /**
+     * 计算标准城市产量明细（不包含自定义人口和连通性数据）
+     */
+    _calculateStandardYieldDetails(city) {
         let yields = [];
         try {
             if (city && city.id) {
-                 yields = CityYields.getCityYieldDetails(city.id);
+                yields = CityYields.getCityYieldDetails(city.id);
             }
         } catch (e) {
             console.error("DanCityData: Error getting city yields details", e);
         }
-        
+
         if (!yields) yields = [];
 
-        const populationData = this.getData('DAN_CITY_POPULATION', city, includeDetails);
-        const connectivityData = this.getData('DAN_CITY_CONNECTIVITY', city, includeDetails);
+        return yields;
+    },
+
+    /**
+     * 计算完整的城市产量数据（包含标准产量 + 自定义数据）
+     */
+    _calculateYieldsDetails(city, includeDetails = false) {
+        const yields = this._calculateStandardYieldDetails(city);
+
+        // 明细路径只解析一次连接定居点，人口和连通性数据共享结果。
+        const settlements = includeDetails ? getConnectedSettlements(city) : null;
+        const populationData = this.getPopulationData(city, includeDetails, settlements);
+        const connectivityData = this.getConnectivityData(city, includeDetails, settlements);
         if (populationData) yields.push(populationData);
         if (connectivityData) yields.push(connectivityData);
         
@@ -136,7 +244,7 @@ export const DanCityData = {
     /**
      * 获取人口数据
      */
-    getPopulationData(city, includeDetails = false) {
+    getPopulationData(city, includeDetails = false, settlements = null) {
         const typeName = 'DAN_CITY_POPULATION';
         
     // 【添加人口相关数据】 ==============================================
@@ -153,7 +261,10 @@ export const DanCityData = {
             childData: [],
         };
         
-        if (!includeDetails) return dataPopulation;
+        if (!includeDetails) {
+            dataPopulation.isSummary = true;
+            return dataPopulation;
+        }
 
         const pendingPop = city.pendingPopulation;              // 待放置人口
         const ruralPop = city.ruralPopulation - pendingPop;     // 乡村人口
@@ -183,20 +294,17 @@ export const DanCityData = {
         }
 
         // 获取连接城市数量，用于判断专业化乡镇
-        const connectedCities = city.getConnectedCities ? city.getConnectedCities() : [];
-        let conectedCityCount = 0;
-        if (connectedCities && connectedCities.length > 0) {
-            for (const connectedCityID of connectedCities) {
-                const connectedCity = Cities.get(connectedCityID);
-                if (connectedCity && !connectedCity.isTown) {
-                    conectedCityCount++;
-                }
+        const connectedSettlements = settlements ?? getConnectedSettlements(city);
+        let connectedCityCount = 0;
+        for (const settlement of connectedSettlements) {
+            if (!settlement.isTown) {
+                connectedCityCount++;
             }
         }
         
         // X回合后出现新市民
         // 如果是城镇并且专业化，连接城市大于0，则表示输送食物不涨人口。文本红色，加上"∞"回合后。数值正常显示
-        const isNotGrowing = city.isTown && city.Growth?.growthType == GrowthTypes.PROJECT && conectedCityCount > 0;
+        const isNotGrowing = city.isTown && city.Growth?.growthType == GrowthTypes.PROJECT && connectedCityCount > 0;
         if (isNotGrowing) {
             addChildYieldData(dataPopulation, 
                 Locale.compose("LOC_UI_CITY_DETAILS_NEW_CITIZEN_IN_TURNS","∞"), city.Growth.turnsUntilGrowth + '[icon:DAN_ICON_TURN]', 
@@ -227,37 +335,27 @@ export const DanCityData = {
     /**
      * 获取城市连通性数据
      */
-    getConnectivityData(city, includeDetails = false) {
+    getConnectivityData(city, includeDetails = false, settlements = null) {
         const typeName = 'DAN_CITY_CONNECTIVITY';
-        
-        // 显示：（人口数）城市名称
-        const formatCityName = (city) => {
-            // 如果是首都，添加星号标记
-            const isCapital = city.isCapital || false;
-            return `(${city.population})${isCapital ? '★' : ''}${Locale.compose(city.name)}`;
-        };
-        
-        const connectedCities = city.getConnectedCities ? city.getConnectedCities() : [];
-        let conectedCityCount = 0;
-        let conectedTownCount = 0;
-        if (connectedCities && connectedCities.length > 0) {
-            // 统计城市和乡镇数量
-            for (const connectedCityID of connectedCities) {
-                const connectedCity = Cities.get(connectedCityID);
-                if (connectedCity) {
-                    if (connectedCity.isTown) {
-                        conectedTownCount++;
-                    } else {
-                        conectedCityCount++;
-                    }
-                }
+
+        const connectedSettlements = settlements ?? getConnectedSettlements(city);
+        const connectedCitySettlements = [];
+        const connectedTownSettlements = [];
+        for (const settlement of connectedSettlements) {
+            if (settlement.isTown) {
+                connectedTownSettlements.push(settlement);
+            } else {
+                connectedCitySettlements.push(settlement);
             }
         }
-        const connectedCitiesCount = conectedCityCount + conectedTownCount;
+        const connectedCityCount = connectedCitySettlements.length;
+        const connectedTownCount = connectedTownSettlements.length;
+        const connectedCitiesCount = connectedCityCount + connectedTownCount;
 
         let textShowValue = String(connectedCitiesCount);
         // 不在贸易网络中 🛇
-        const isNotInTradeNetwork = !city.Trade?.isInTradeNetwork();
+        const isInTradeNetwork = city.Trade?.isInTradeNetwork();
+        const isNotInTradeNetwork = !isInTradeNetwork;
         if (isNotInTradeNetwork && connectedCitiesCount == 0) {
             textShowValue = `-`;
         }
@@ -266,71 +364,65 @@ export const DanCityData = {
         const dataConnectivity = {
             ...DEFAULT_DATA_OPTIONS,
             type: typeName,
-            label: Locale.toUpper(Locale.compose("LOC_PEDIA_CONCEPTS_PAGE_CONNECTED_1_TITLE")),
+            label: getConnectivityLabel(),
             value: textShowValue,
             valueNum: connectedCitiesCount,
-            icon: `url("fs://game/f1rstdans_cool_ui/textures/${typeName}.png")`,
+            icon: CONNECTIVITY_ICON_URL,
             childData: [],
         };
 
-        if (!includeDetails) return dataConnectivity;
+        if (!includeDetails) {
+            dataConnectivity.isSummary = true;
+            return dataConnectivity;
+        }
 
-        if (connectedCities && connectedCities.length > 0) {
+        if (connectedSettlements.length > 0) {
             if (!city.isTown) {
                 // 城市数据结构
                 // 1. 连接城市数据
-                if (conectedCityCount > 0) {
+                if (connectedCityCount > 0) {
                     const citiesData = addChildYieldData(dataConnectivity, 
                         '[B]' + Locale.compose("LOC_UI_SETTLEMENT_TAB_BAR_CITIES") + '[/B]', 
-                        '[icon:YIELD_CITIES]' + conectedCityCount);
+                        '[icon:YIELD_CITIES]' + connectedCityCount);
                     
                     // 添加具体城市名称
-                    for (const connectedCityID of connectedCities) {
-                        const connectedCity = Cities.get(connectedCityID);
-                        if (connectedCity && !connectedCity.isTown) {
-                            addChildYieldData(citiesData, formatCityName(connectedCity), "");
-                        }
+                    for (const connectedCity of connectedCitySettlements) {
+                        addChildYieldData(citiesData, formatCityName(connectedCity), "");
                     }
                 }
 
                 // 2. 连接乡镇数据
                 let totalReceivedFood = 0;
                 let totalReceivedTownCount = 0;
-                if (conectedTownCount > 0) {
+                if (connectedTownCount > 0) {
                     const townsData = addChildYieldData(dataConnectivity, 
                         '[B]' + Locale.compose("LOC_UI_SETTLEMENT_TAB_BAR_TOWNS") + '[/B]', 
-                        '[icon:YIELD_TOWNS]' + conectedTownCount);
+                        '[icon:YIELD_TOWNS]' + connectedTownCount);
                     
                     // 添加具体乡镇名称和食物数据
-                    for (const connectedCityID of connectedCities) {
-                        const connectedTown = Cities.get(connectedCityID);
-                        if (connectedTown && connectedTown.isTown) {
-                            // 检查乡镇是否已专业化
-                            if (connectedTown.Growth?.growthType == GrowthTypes.PROJECT) {
-                                const townFoodYield = connectedTown.Yields?.getNetYield(YieldTypes.YIELD_FOOD);
-                                if (townFoodYield) {
-                                    const connectedCitiesCount = connectedTown.getConnectedCities().filter(id => {
-                                        const settlement = Cities.get(id);
-                                        return settlement && !settlement.isTown;
-                                    }).length;
-                                    
-                                    if (connectedCitiesCount > 0) {
-                                        const foodForCity = townFoodYield / connectedCitiesCount;
-                                        totalReceivedFood += foodForCity;
-                                        totalReceivedTownCount += 1;
-                                        addChildYieldData(townsData, 
-                                            formatCityName(connectedTown), 
-                                            `+${foodForCity.toFixed(1)}[icon:YIELD_FOOD]`, 
-                                            {
-                                                icon: "YIELD_FOOD",
-                                                iconContext: "YIELD"
-                                            });
-                                    }
+                    for (const connectedTown of connectedTownSettlements) {
+                        // 检查乡镇是否已专业化
+                        if (connectedTown.Growth?.growthType == GrowthTypes.PROJECT) {
+                            const townFoodYield = connectedTown.Yields?.getNetYield(YieldTypes.YIELD_FOOD);
+                            if (townFoodYield) {
+                                const townConnectedCityCount = countConnectedCities(connectedTown);
+
+                                if (townConnectedCityCount > 0) {
+                                    const foodForCity = townFoodYield / townConnectedCityCount;
+                                    totalReceivedFood += foodForCity;
+                                    totalReceivedTownCount += 1;
+                                    addChildYieldData(townsData,
+                                        formatCityName(connectedTown),
+                                        `+${foodForCity.toFixed(1)}[icon:YIELD_FOOD]`,
+                                        {
+                                            icon: "YIELD_FOOD",
+                                            iconContext: "YIELD"
+                                        });
                                 }
-                            } else {
-                                // 乡镇未专业化，只显示名称
-                                addChildYieldData(townsData, formatCityName(connectedTown), "");
                             }
+                        } else {
+                            // 乡镇未专业化，只显示名称
+                            addChildYieldData(townsData, formatCityName(connectedTown), "");
                         }
                     }
                 }
@@ -348,55 +440,49 @@ export const DanCityData = {
                 // 乡镇数据结构
                 // 1. 连接城市数据
                 let townFoodYield;
-                if (conectedCityCount > 0) {
+                if (connectedCityCount > 0) {
                     const citiesData = addChildYieldData(dataConnectivity, 
                         '[B]' + Locale.compose("LOC_UI_SETTLEMENT_TAB_BAR_CITIES") + '[/B]', 
-                        '[icon:YIELD_CITIES]' + conectedCityCount);
+                        '[icon:YIELD_CITIES]' + connectedCityCount);
                     
                     // 如果是专业化城镇，并且有食物产出，则添加食物输送数据
                     townFoodYield = city.Yields?.getNetYield(YieldTypes.YIELD_FOOD);
                     const isSpecializedTown = townFoodYield > 0 && city.Growth?.growthType == GrowthTypes.PROJECT;
-                    const foodPerCity = isSpecializedTown ? townFoodYield / conectedCityCount : 0;
+                    const foodPerCity = isSpecializedTown ? townFoodYield / connectedCityCount : 0;
                     // TODO 还没用过 const foodForEachCity = town.getSentFoodPerCity();
                     
                     // 添加具体城市名称和食物数据
-                    for (const connectedCityID of connectedCities) {
-                        const connectedCity = Cities.get(connectedCityID);
-                        if (connectedCity && !connectedCity.isTown) {
-                            if (isSpecializedTown) {
-                                // 专业化城镇显示食物输送数据
-                                addChildYieldData(citiesData, 
-                                    formatCityName(connectedCity), 
-                                    `[STYLE:text-gradient-negative]${(-foodPerCity).toFixed(1)}[/STYLE][icon:YIELD_FOOD]`, 
-                                    {
-                                        icon: "YIELD_FOOD",
-                                        iconContext: "YIELD",
-                                        isNegative: false,
-                                    });
-                            } else {
-                                // 默认只显示城市名称
-                                addChildYieldData(citiesData, formatCityName(connectedCity), "");
-                            }
+                    for (const connectedCity of connectedCitySettlements) {
+                        if (isSpecializedTown) {
+                            // 专业化城镇显示食物输送数据
+                            addChildYieldData(citiesData,
+                                formatCityName(connectedCity),
+                                `[STYLE:text-gradient-negative]${(-foodPerCity).toFixed(1)}[/STYLE][icon:YIELD_FOOD]`,
+                                {
+                                    icon: "YIELD_FOOD",
+                                    iconContext: "YIELD",
+                                    isNegative: false,
+                                });
+                        } else {
+                            // 默认只显示城市名称
+                            addChildYieldData(citiesData, formatCityName(connectedCity), "");
                         }
                     }
                 }
                 // 2. 连接乡镇数据
-                if (conectedTownCount > 0) {
+                if (connectedTownCount > 0) {
                     const townsData = addChildYieldData(dataConnectivity, 
                         '[B]' + Locale.compose("LOC_UI_SETTLEMENT_TAB_BAR_TOWNS") + '[/B]', 
-                        '[icon:YIELD_TOWNS]' + conectedTownCount);
+                        '[icon:YIELD_TOWNS]' + connectedTownCount);
                     
                     // 添加具体乡镇名称
-                    for (const connectedCityID of connectedCities) {
-                        const connectedTown = Cities.get(connectedCityID);
-                        if (connectedTown && connectedTown.isTown) {
-                            addChildYieldData(townsData, formatCityName(connectedTown), "");
-                        }
+                    for (const connectedTown of connectedTownSettlements) {
+                        addChildYieldData(townsData, formatCityName(connectedTown), "");
                     }
                 }
                 // 3. 总共输出食物 - 只有在专业化且有食物产出时才显示
                 // 没必要显示，有些冗余，因为必然是食物产量
-                if (townFoodYield > 0 && conectedCityCount > 1 && city.Growth?.growthType == GrowthTypes.PROJECT) {
+                if (townFoodYield > 0 && connectedCityCount > 1 && city.Growth?.growthType == GrowthTypes.PROJECT) {
                     addChildYieldData(dataConnectivity, 
                         '[icon:YIELD_FOOD]' + Locale.compose("LOC_ATTR_YIELD_MINUS_DEDUCTIONS"), 
                         (-townFoodYield).toFixed(1) + '[icon:YIELD_FOOD]', 
@@ -411,7 +497,7 @@ export const DanCityData = {
 
         // 3. 添加贸易路线信息（如果有）
         // 定居点未连接到帝国的贸易网络。
-        if (city.Trade && city.Trade.isInTradeNetwork() == false) {
+        if (city.Trade && isInTradeNetwork == false) {
             addChildYieldData(dataConnectivity, Locale.compose("LOC_UI_RESOURCE_ALLOCATION_SETTLEMENT_DISCONNECTED"), "", {isFullRow: true, isNegative: true});
         }
         // TODO: 增加贸易信息
